@@ -4,7 +4,7 @@ An egg timer that entertains you until the egg is done: the clock is painted on 
 that you roll around a dish by tilting the phone (or dragging with a finger/mouse).
 
 Also a test rig for the Store O workflow: web app (Vite) → iOS app (Capacitor) → iPhone.
-The first, simple SVG version is kept as the git tag `v1-svg`.
+The first, simple SVG version is kept on the branch `v1-svg`.
 
 ## How it works
 
