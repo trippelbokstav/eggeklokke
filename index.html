@@ -137,8 +137,39 @@
   <p class="tip">Piper hvert 30. sekund, og hvert sekund de siste 10.</p>
 </main>
 
+<script type="module">
+  // Native bridge: real haptics in the iOS app, plain web fallback in the browser
+  import { Capacitor } from '@capacitor/core';
+  import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
+
+  const isNative = Capacitor.isNativePlatform();
+  const webVibrate = (pattern) => { try { navigator.vibrate && navigator.vibrate(pattern); } catch (e) {} };
+
+  window.haptic = {
+    isNative,
+    // Light click when choosing an option
+    select() { if (isNative) Haptics.selectionChanged(); },
+    // Firm press on Start / Cancel
+    press() { if (isNative) Haptics.impact({ style: ImpactStyle.Medium }); },
+    // Tiny tick for the last 10 seconds
+    tick() { if (isNative) Haptics.impact({ style: ImpactStyle.Light }); },
+    // Alarm: "success" pattern followed by a long buzz
+    alarm() {
+      if (isNative) {
+        Haptics.notification({ type: NotificationType.Success })
+          .then(() => Haptics.vibrate({ duration: 500 }));
+      } else {
+        webVibrate([400, 200, 400, 200, 400]);
+      }
+    }
+  };
+</script>
+
 <script>
 (function () {
+  // Safe wrapper: the module above loads after this script, so check before calling
+  function haptic(kind) { try { if (window.haptic) window.haptic[kind](); } catch (e) {} }
+
   // Koketid i sekunder for medium egg ved havnivå, rett fra kjøleskapet
   var BASE = { soft: 360, smile: 450, hard: 600 };
   var SIZE = { s: 0.9, m: 1, l: 1.1 };
@@ -215,6 +246,7 @@
     resetBtn.style.gridColumn = "1 / -1";
     subEl.textContent = NAMES[val("d")].charAt(0).toUpperCase() + NAMES[val("d")].slice(1) + ", " + SIZENAMES[val("s")] + " egg";
     smallBeep();
+    haptic("press");
     try { if (navigator.wakeLock) navigator.wakeLock.request("screen").then(function (w) { wake = w; }).catch(function () {}); } catch (e) {}
     clearInterval(tick);
     tick = setInterval(update, 100);
@@ -231,7 +263,7 @@
       var prev = lastSec;
       lastSec = sec;
       if (prev !== null && sec > 0) {
-        if (sec <= 10) smallBeep();
+        if (sec <= 10) { smallBeep(); haptic("tick"); }
         else if (sec % 30 === 0) smallBeep();
       }
     }
@@ -251,12 +283,12 @@
     resetBtn.hidden = true;
     alarmStart = Date.now();
     alarmBurst();
-    try { if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400]); } catch (e) {}
+    haptic("alarm");
     clearInterval(alarmTimer);
     alarmTimer = setInterval(function () {
       if (Date.now() - alarmStart > 90000) { reset(); return; }
       alarmBurst();
-      try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (e) {}
+      haptic("alarm");
     }, 1200);
   }
 
@@ -276,11 +308,12 @@
   }
 
   goBtn.addEventListener("click", function () {
+    if (clockEl.classList.contains("done")) haptic("press");
     if (clockEl.classList.contains("done")) reset();
     else if (!running) start();
   });
-  resetBtn.addEventListener("click", reset);
-  document.querySelectorAll('input[name="d"], input[name="s"]').forEach(function (el) { el.addEventListener("change", refreshIdle); });
+  resetBtn.addEventListener("click", function () { haptic("press"); reset(); });
+  document.querySelectorAll('input[name="d"], input[name="s"]').forEach(function (el) { el.addEventListener("change", function () { haptic("select"); refreshIdle(); }); });
   altEl.addEventListener("input", refreshIdle);
   document.addEventListener("visibilitychange", function () { if (running) update(); });
 
