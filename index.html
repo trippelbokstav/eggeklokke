@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Eggklokke</title>
+<style>
+  :root {
+    --bg: #E3ECEF;
+    --panel: #F4F8F9;
+    --ink: #14303B;
+    --muted: #55707C;
+    --line: #BCCDD4;
+    --yolk: #F0AE0B;
+    --yolk-ink: #2A1D00;
+    --track: #CFDDE2;
+    --alert: #C2410C;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1E26; --panel: #172A34; --ink: #E6F0F3; --muted: #93AAB5;
+      --line: #2B4452; --yolk: #F4B71C; --yolk-ink: #2A1D00; --track: #243A46; --alert: #FB923C;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1E26; --panel: #172A34; --ink: #E6F0F3; --muted: #93AAB5;
+    --line: #2B4452; --yolk: #F4B71C; --yolk-ink: #2A1D00; --track: #243A46; --alert: #FB923C;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Nunito", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  main { max-width: 460px; margin: 0 auto; padding: 20px 18px 40px; }
+  h1 { font-size: 1.35rem; margin: 4px 0 18px; font-weight: 800; letter-spacing: -0.01em; }
+
+  .clock { position: relative; width: min(78vw, 300px); margin: 0 auto 18px; aspect-ratio: 5 / 6.2; }
+  .clock svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .egg-track { fill: var(--panel); stroke: var(--track); stroke-width: 7; }
+  .egg-prog { fill: none; stroke: var(--yolk); stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset .25s linear; }
+  .readout { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-top: 12%; text-align: center; }
+  .time { font-size: clamp(2.8rem, 15vw, 4.2rem); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+  .sub { margin-top: 8px; font-size: .9rem; color: var(--muted); max-width: 70%; line-height: 1.3; }
+  .clock.done .time { color: var(--alert); animation: shake .5s ease-in-out infinite; }
+  @keyframes shake { 0%,100% { transform: rotate(0) } 25% { transform: rotate(-3deg) } 75% { transform: rotate(3deg) } }
+
+  fieldset { border: 0; padding: 0; margin: 0 0 18px; }
+  legend { font-weight: 700; font-size: .95rem; margin-bottom: 8px; padding: 0; }
+  .seg { display: grid; gap: 8px; grid-template-columns: repeat(3, 1fr); }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 12px 6px; border: 2px solid var(--line); border-radius: 14px; background: var(--panel);
+    cursor: pointer; text-align: center; font-weight: 700; font-size: .95rem; min-height: 64px; justify-content: center;
+    transition: background .15s, border-color .15s;
+  }
+  .seg label small { font-weight: 500; color: var(--muted); font-size: .76rem; }
+  .seg input:checked + label { border-color: var(--yolk); background: var(--yolk); color: var(--yolk-ink); }
+  .seg input:checked + label small { color: var(--yolk-ink); opacity: .8; }
+  .seg input:focus-visible + label { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .egg-ico { display: inline-block; background: currentColor; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; opacity: .85; }
+
+  .alt-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .alt-head strong { font-size: .95rem; }
+  .alt-head output { font-weight: 800; font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--yolk); height: 32px; margin: 0; }
+  .scale { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); }
+  .note { font-size: .82rem; color: var(--muted); margin: 8px 0 0; line-height: 1.4; }
+
+  .actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 22px; }
+  button {
+    font: inherit; font-weight: 800; font-size: 1.05rem; border: 0; border-radius: 16px; min-height: 56px; cursor: pointer;
+    padding: 0 22px;
+  }
+  button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .go { background: var(--yolk); color: var(--yolk-ink); }
+  .stop { background: var(--panel); color: var(--ink); border: 2px solid var(--line); }
+  .go.alarm { background: var(--alert); color: #fff; }
+  .tip { margin-top: 18px; font-size: .85rem; color: var(--muted); text-align: center; }
+  fieldset:disabled, .locked { opacity: .55; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { .clock.done .time { animation: none; } .egg-prog { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Eggklokke</h1>
+
+  <div class="clock" id="clock">
+    <svg viewBox="0 0 200 248" aria-hidden="true">
+      <path id="eggPath" class="egg-track" pathLength="100"
+        d="M100 8 C150 8 184 80 184 142 C184 196 148 240 100 240 C52 240 16 196 16 142 C16 80 50 8 100 8 Z"/>
+      <path id="prog" class="egg-prog" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"
+        d="M100 8 C150 8 184 80 184 142 C184 196 148 240 100 240 C52 240 16 196 16 142 C16 80 50 8 100 8 Z"/>
+    </svg>
+    <div class="readout" role="timer" aria-live="off">
+      <div class="time" id="time">6:00</div>
+      <div class="sub" id="sub">Start klokka når egget går ned i kokende vann.</div>
+    </div>
+  </div>
+
+  <div id="settings">
+    <fieldset>
+      <legend>Hvordan vil du ha egget?</legend>
+      <div class="seg" id="doneness">
+        <input type="radio" name="d" id="d-soft" value="soft" checked><label for="d-soft">Bløtkokt<small>rennende plomme</small></label>
+        <input type="radio" name="d" id="d-smile" value="smile"><label for="d-smile">Smilende<small>myk, kremet plomme</small></label>
+        <input type="radio" name="d" id="d-hard" value="hard"><label for="d-hard">Hardkokt<small>fast plomme</small></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Størrelse</legend>
+      <div class="seg" id="size">
+        <input type="radio" name="s" id="s-s" value="s"><label for="s-s"><span class="egg-ico" style="width:14px;height:18px"></span>Lite<small>under 53 g</small></label>
+        <input type="radio" name="s" id="s-m" value="m" checked><label for="s-m"><span class="egg-ico" style="width:18px;height:23px"></span>Medium<small>53–63 g</small></label>
+        <input type="radio" name="s" id="s-l" value="l"><label for="s-l"><span class="egg-ico" style="width:23px;height:29px"></span>Stort<small>over 63 g</small></label>
+      </div>
+    </fieldset>
+
+    <div style="margin-bottom:6px">
+      <div class="alt-head"><strong><label for="alt">Høyde over havet</label></strong><output id="altOut" for="alt">0 m</output></div>
+      <input type="range" id="alt" min="0" max="2500" step="50" value="0">
+      <div class="scale"><span>0 m</span><span>1250 m</span><span>2500 m</span></div>
+      <p class="note" id="altNote">Vannet koker ved 100 °C.</p>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="go" id="go" type="button">Start</button>
+    <button class="stop" id="reset" type="button" hidden>Avbryt</button>
+  </div>
+  <p class="tip">Piper hvert 30. sekund, og hvert sekund de siste 10.</p>
+</main>
+
+<script>
+(function () {
+  // Koketid i sekunder for medium egg ved havnivå, rett fra kjøleskapet
+  var BASE = { soft: 360, smile: 450, hard: 600 };
+  var SIZE = { s: 0.9, m: 1, l: 1.1 };
+  var NAMES = { soft: "bløtkokt", smile: "smilende", hard: "hardkokt" };
+  var SIZENAMES = { s: "lite", m: "medium", l: "stort" };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var timeEl = $("time"), subEl = $("sub"), progEl = $("prog"), clockEl = $("clock");
+  var goBtn = $("go"), resetBtn = $("reset"), altEl = $("alt"), altOut = $("altOut"), altNote = $("altNote");
+  var settings = $("settings");
+
+  function val(name) { return document.querySelector('input[name="' + name + '"]:checked').value; }
+  function boilTemp(h) { return 100 - 0.0034 * h; }          // ca. 1 °C lavere per 300 m
+  function altFactor(h) { return Math.pow(2, (100 - boilTemp(h)) / 12); }
+  function totalSeconds() {
+    var t = BASE[val("d")] * SIZE[val("s")] * altFactor(+altEl.value);
+    return Math.round(t / 5) * 5;
+  }
+  function fmt(s) {
+    s = Math.max(0, Math.ceil(s));
+    var m = Math.floor(s / 60), r = s % 60;
+    return m + ":" + (r < 10 ? "0" : "") + r;
+  }
+
+  // ---------- Lyd ----------
+  var ctx = null;
+  function audio() {
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+    if (ctx && ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+  function beep(freq, dur, vol, when) {
+    var c = audio(); if (!c) return;
+    var t0 = c.currentTime + (when || 0);
+    var o = c.createOscillator(), g = c.createGain();
+    o.type = "sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(t0); o.stop(t0 + dur + 0.02);
+  }
+  function smallBeep() { beep(880, 0.09, 0.15); }
+  function alarmBurst() { for (var i = 0; i < 4; i++) beep(1320, 0.12, 0.35, i * 0.18); }
+
+  // ---------- Tilstand ----------
+  var running = false, endAt = 0, total = 0, lastSec = null, tick = null, alarmTimer = null, alarmStart = 0, wake = null;
+
+  function refreshIdle() {
+    var h = +altEl.value;
+    altOut.textContent = h + " m";
+    var bt = boilTemp(h);
+    altNote.textContent = h < 100
+      ? "Vannet koker ved 100 °C."
+      : "Vannet koker ved ca. " + bt.toFixed(1).replace(".", ",") + " °C, så egget trenger ca. " +
+        Math.round((altFactor(h) - 1) * 100) + " % lengre tid.";
+    if (!running) {
+      timeEl.textContent = fmt(totalSeconds());
+      progEl.style.strokeDashoffset = 100;
+    }
+  }
+
+  function start() {
+    audio();
+    total = totalSeconds();
+    endAt = Date.now() + total * 1000;
+    lastSec = null;
+    running = true;
+    clockEl.classList.remove("done");
+    settings.classList.add("locked");
+    goBtn.hidden = true;
+    resetBtn.hidden = false;
+    resetBtn.textContent = "Avbryt";
+    resetBtn.style.gridColumn = "1 / -1";
+    subEl.textContent = NAMES[val("d")].charAt(0).toUpperCase() + NAMES[val("d")].slice(1) + ", " + SIZENAMES[val("s")] + " egg";
+    smallBeep();
+    try { if (navigator.wakeLock) navigator.wakeLock.request("screen").then(function (w) { wake = w; }).catch(function () {}); } catch (e) {}
+    clearInterval(tick);
+    tick = setInterval(update, 100);
+    update();
+  }
+
+  function update() {
+    var remaining = (endAt - Date.now()) / 1000;
+    var sec = Math.ceil(remaining);
+    timeEl.textContent = fmt(remaining);
+    progEl.style.strokeDashoffset = String(100 - 100 * Math.min(1, Math.max(0, 1 - remaining / total)));
+
+    if (sec !== lastSec) {
+      var prev = lastSec;
+      lastSec = sec;
+      if (prev !== null && sec > 0) {
+        if (sec <= 10) smallBeep();
+        else if (sec % 30 === 0) smallBeep();
+      }
+    }
+    if (remaining <= 0) finish();
+  }
+
+  function finish() {
+    clearInterval(tick);
+    running = false;
+    clockEl.classList.add("done");
+    timeEl.textContent = "0:00";
+    progEl.style.strokeDashoffset = 0;
+    subEl.textContent = "Egget er ferdig! Ta det opp og skyll i kaldt vann.";
+    goBtn.hidden = false;
+    goBtn.classList.add("alarm");
+    goBtn.textContent = "Stopp alarmen";
+    resetBtn.hidden = true;
+    alarmStart = Date.now();
+    alarmBurst();
+    try { if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400]); } catch (e) {}
+    clearInterval(alarmTimer);
+    alarmTimer = setInterval(function () {
+      if (Date.now() - alarmStart > 90000) { reset(); return; }
+      alarmBurst();
+      try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (e) {}
+    }, 1200);
+  }
+
+  function reset() {
+    clearInterval(tick); clearInterval(alarmTimer);
+    running = false;
+    try { if (wake) wake.release(); } catch (e) {}
+    wake = null;
+    clockEl.classList.remove("done");
+    settings.classList.remove("locked");
+    goBtn.hidden = false;
+    goBtn.classList.remove("alarm");
+    goBtn.textContent = "Start";
+    resetBtn.hidden = true;
+    subEl.textContent = "Start klokka når egget går ned i kokende vann.";
+    refreshIdle();
+  }
+
+  goBtn.addEventListener("click", function () {
+    if (clockEl.classList.contains("done")) reset();
+    else if (!running) start();
+  });
+  resetBtn.addEventListener("click", reset);
+  document.querySelectorAll('input[name="d"], input[name="s"]').forEach(function (el) { el.addEventListener("change", refreshIdle); });
+  altEl.addEventListener("input", refreshIdle);
+  document.addEventListener("visibilitychange", function () { if (running) update(); });
+
+  refreshIdle();
+})();
+</script>
+</body>
+</html>
