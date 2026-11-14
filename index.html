@@ -83,6 +83,7 @@
   /* While the egg boils: hide the settings, give the egg the room */
   body.running .settings, body.done .settings { display: none; }
 
+  .fps { position: fixed; left: 8px; top: calc(env(safe-area-inset-top, 0px) + 6px); font: 600 11px/1.2 ui-monospace, monospace; background: rgba(0,0,0,.6); color: #fff; padding: 3px 6px; border-radius: 6px; z-index: 9; pointer-events: none; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>
 </head>

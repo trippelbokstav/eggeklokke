@@ -119,12 +119,13 @@ export async function createWorld(container) {
   const world = new RAPIER.World({ x: 0, y: -G, z: 0 });
   world.timestep = STEP;
 
-  // Dish as a triangle mesh (same shape as the visible dish)
+  // Dish as a triangle mesh: same shape as the visible dish, but far fewer triangles (cheaper physics)
+  const dishColGeo = new THREE.LatheGeometry(dishProfile(12), 32);
   const dishBody = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
   world.createCollider(
     RAPIER.ColliderDesc.trimesh(
-      new Float32Array(dishGeo.attributes.position.array),
-      new Uint32Array(dishGeo.index.array)
+      new Float32Array(dishColGeo.attributes.position.array),
+      new Uint32Array(dishColGeo.index.array)
     ).setFriction(0.8).setRestitution(0.25),
     dishBody
   );
@@ -149,12 +150,12 @@ export async function createWorld(container) {
       .setTranslation(0, 1.6, 0)
       .setRotation({ x: startRot.x, y: startRot.y, z: startRot.z, w: startRot.w })
       .setCanSleep(false)
-      .setCcdEnabled(true)
       .setLinearDamping(0.15)
       .setAngularDamping(0.35)
   );
   world.createCollider(
-    RAPIER.ColliderDesc.convexHull(new Float32Array(eggGeo.attributes.position.array))
+    // Low-res hull for physics: the egg still wobbles, but collisions are much cheaper
+    RAPIER.ColliderDesc.convexHull(new Float32Array(new THREE.LatheGeometry(eggProfile(10), 14).attributes.position.array))
       .setDensity(1).setFriction(0.7).setRestitution(0.3),
     eggBody
   );
@@ -240,6 +241,7 @@ export async function createWorld(container) {
   let acc = 0;
   let last = performance.now();
   let frameHook = null;
+  const stats = { fps: 0, physicsMs: 0, frames: 0, since: performance.now(), physSum: 0 };
 
   function frame(now) {
     const dt = Math.min(0.1, (now - last) / 1000);
@@ -248,7 +250,8 @@ export async function createWorld(container) {
 
     acc += dt;
     let steps = 0;
-    while (acc >= STEP && steps < 5) {
+    const p0 = performance.now();
+    while (acc >= STEP && steps < 3) {
       prevPos.copy(currPos);
       prevRot.copy(currRot);
       step();
@@ -256,7 +259,16 @@ export async function createWorld(container) {
       acc -= STEP;
       steps++;
     }
-    if (steps === 5) acc = 0;
+    if (steps === 3) acc = 0; // never try to catch up forever (avoids a slow-motion spiral)
+    stats.physSum += performance.now() - p0;
+    stats.frames++;
+    if (now - stats.since >= 1000) {
+      stats.fps = Math.round(stats.frames * 1000 / (now - stats.since));
+      stats.physicsMs = stats.physSum / stats.frames;
+      stats.frames = 0;
+      stats.physSum = 0;
+      stats.since = now;
+    }
 
     // Interpolate between physics steps (smooth on 120 Hz screens)
     const a = acc / STEP;
@@ -302,6 +314,7 @@ export async function createWorld(container) {
       }, true);
     },
     onBump(cb) { bumpHandler = cb; },
+    stats,
     start(hook) {
       frameHook = hook;
       last = performance.now();

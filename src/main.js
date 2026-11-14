@@ -149,10 +149,24 @@ function applyTheme() {
 applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
+let lastBumpAt = 0;
 world.onBump((s) => {
+  const t = performance.now();
+  if (t - lastBumpAt < 90) return; // one bump at a time, not one per physics step
+  lastBumpAt = t;
   haptic.bump(s);
   sound.bump(s);
 });
+
+// FPS meter: add ?fps to the address
+const fpsEl = new URLSearchParams(location.search).has('fps') ? document.createElement('div') : null;
+if (fpsEl) {
+  fpsEl.className = 'fps';
+  document.body.appendChild(fpsEl);
+  setInterval(() => {
+    fpsEl.textContent = `${world.stats.fps} fps · fysikk ${world.stats.physicsMs.toFixed(1)} ms · ${devicePixelRatio}x`;
+  }, 500);
+}
 
 world.start((dt, now) => {
   // ---- Tilt, or roll back to the middle when nobody plays ----
