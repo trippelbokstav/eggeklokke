@@ -40,12 +40,13 @@ export const DEFAULT_PARAMS = {
   angDamp: 0.35,
 
   // Behaviour
-  idleSec: 10,            // roll back to the middle after this many seconds without play
-  centerSpring: 5,
+  idleSec: 10,            // glide home to the zero position after this many seconds without play
+  homeSpeed: 1.8,         // how fast it glides home (higher = faster)
+  wallOut: 0.4,           // how far outside the screen the walls are, in egg widths (0 = at the edge)
   alarmJump: 0.8
 };
 
-const STORE_KEY = 'eggeklokke-lab-v3'; // bump when defaults change, so old lab values don't override them
+const STORE_KEY = 'eggeklokke-lab-v4'; // bump when defaults change, so old lab values don't override them
 
 export function loadParams(useStored) {
   const params = { ...DEFAULT_PARAMS };

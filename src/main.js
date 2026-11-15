@@ -114,6 +114,8 @@ function finish() {
   resetBtn.hidden = true;
   alarmStart = performance.now();
   lastAlarm = 0;
+  centerMode = false;
+  world.setPosed(false); // free the egg, so it can jump
 }
 
 function reset() {
@@ -145,7 +147,7 @@ updateTip();
 
 // ---------- 3D ----------
 let world = null;
-world = await createWorld(stage, P);
+world = await createWorld($('scene'), P, stage);
 stage.classList.add('ready');
 // Debugging in the console: __egg.skip(330) jumps 330 seconds ahead
 window.__egg = { ...world.debug, world, P, skip(s) { if (running) endAt -= s * 1000; } };
@@ -180,16 +182,15 @@ if (fpsEl) {
 }
 
 world.start((dt, now) => {
-  // ---- Tilt, or roll back to the middle when nobody plays ----
+  // ---- Tilt, or glide home to the zero position when nobody plays ----
   const idle = running && input.idleFor() > P.idleSec * 1000;
-  if (idle && !centerMode) { centerMode = true; input.recalibrate(); }
-  if (!idle && centerMode) centerMode = false;
+  if (idle && !centerMode) { centerMode = true; input.recalibrate(); world.setPosed(true, P.homeSpeed); }
+  if (!idle && centerMode) { centerMode = false; if (running) world.setPosed(false); }
   const want = centerMode ? { x: 0, z: 0 } : input.tilt();
   const k = 1 - Math.exp(-dt * 10);
   tiltNow.x += (want.x - tiltNow.x) * k;
   tiltNow.z += (want.z - tiltNow.z) * k;
   world.setTilt(tiltNow.x, tiltNow.z);
-  world.setCenterPull(centerMode);
 
   // ---- Time ----
   let text;

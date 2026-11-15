@@ -12,7 +12,8 @@ The first, simple SVG version is kept on the branch `v1-svg`.
 - **three.js** draws the egg from straight above (flat toon shading, outline, silhouette drop shadow, faint dots, a slightly rough bump map).
 - **Rapier** (`@dimforge/rapier3d-compat`) simulates the egg as a convex hull, so it wobbles and rolls in curves like a real egg.
 - **Zero position:** while you set the timer, the egg lies straight (pointy end up, clock facing you). Start wakes it up; stop glides it back.
-- **Tilt** (gyro, or drag) turns gravity sideways. After 10 s without play, the egg rolls back to the middle.
+- **Tilt** (gyro, or drag) turns gravity sideways. After 10 s without play, the egg glides home to the zero position.
+- **Walls** sit just outside the screen (`wallOut`), so the egg can slip half out of view. The canvas fills the whole screen behind the UI.
 - **The clock** is painted on a canvas texture in low contrast, repeated around the egg.
 - **Color:** the egg keeps the background color. The outline steps every 30 s from white via yellow to red, and swells on the beeps in the last 10 s.
 - **Haptics** (`@capacitor/haptics`): clicks on buttons, ticks at the end, bumps when the egg hits the dish. Only in the iOS app.

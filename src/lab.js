@@ -50,7 +50,8 @@ export function createLab(P, world) {
 
   const beh = gui.addFolder('Oppførsel');
   beh.add(P, 'idleSec', 2, 60, 1).name('hjem etter (s)').onChange(changed);
-  beh.add(P, 'centerSpring', 0.5, 20, 0.5).name('hjem-kraft').onChange(changed);
+  beh.add(P, 'homeSpeed', 0.5, 10, 0.1).name('hjem-fart').onChange(changed);
+  beh.add(P, 'wallOut', -0.2, 1, 0.01).name('vegg utenfor kant').onChange(changed);
   beh.add(P, 'alarmJump', 0, 3, 0.05).name('alarm-hopp').onChange(changed);
 
   const actions = {

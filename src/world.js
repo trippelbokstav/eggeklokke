@@ -31,7 +31,8 @@ function toonGradient() {
   return tex;
 }
 
-export async function createWorld(container, P) {
+// container: the full-screen element the canvas fills. focus: the free area where the egg rests (zero position).
+export async function createWorld(container, P, focus = container) {
   await RAPIER.init();
 
   // ---------- three.js ----------
@@ -112,6 +113,7 @@ export async function createWorld(container, P) {
       .setCanSleep(false)
   );
   let posed = true;
+  let poseSpeed = 9;     // glide speed to the zero position
   let outlinePulse = 0;
   const tmpPos = new THREE.Vector3();
   const tmpRot = new THREE.Quaternion();
@@ -120,7 +122,6 @@ export async function createWorld(container, P) {
 
   // ---------- State ----------
   const tilt = { x: 0, z: 0 };
-  let centerPull = false;
   let bumpHandler = null;
   const prevVel = new THREE.Vector3();
   const prevPos = new THREE.Vector3();
@@ -160,7 +161,7 @@ export async function createWorld(container, P) {
       eggCollider.setRestitution(P.bounce);
     }
     eggBody.setLinearDamping(P.linDamp);
-    eggBody.setAngularDamping(centerPull ? Math.max(1.6, P.angDamp) : P.angDamp);
+    eggBody.setAngularDamping(P.angDamp);
     eggMat.bumpScale = P.rough * 2;
     ambient.intensity = Math.PI * (1 - P.shade);
     sun.intensity = Math.PI * P.shade;
@@ -177,7 +178,7 @@ export async function createWorld(container, P) {
       // Glide to the zero position and stay there
       const t = eggBody.translation();
       const r = eggBody.rotation();
-      const e = 1 - Math.exp(-STEP * 9);
+      const e = 1 - Math.exp(-STEP * poseSpeed);
       tmpPos.set(t.x, t.y, t.z).lerp(posePos, e);
       tmpRot.set(r.x, r.y, r.z, r.w).slerp(poseRot, e);
       eggBody.setNextKinematicTranslation({ x: tmpPos.x, y: tmpPos.y, z: tmpPos.z });
@@ -189,15 +190,6 @@ export async function createWorld(container, P) {
     const g = P.gravity;
     world.gravity = { x: tilt.x * g * P.tilt, y: -g, z: tilt.z * g * P.tilt };
 
-    eggBody.resetForces(true);
-    if (centerPull) {
-      // Soft spring towards the middle, with damping, so the egg settles
-      const p = eggBody.translation();
-      const v = eggBody.linvel();
-      const k = P.centerSpring;
-      const c = Math.sqrt(k);
-      eggBody.addForce({ x: mass * (-k * p.x - c * v.x), y: 0, z: mass * (-k * p.z - c * v.z) }, true);
-    }
 
     world.step();
 
@@ -241,11 +233,20 @@ export async function createWorld(container, P) {
     camera.updateProjectionMatrix();
     // Visible area at the height of the egg's middle, a little inside the edge
     const atEgg = dist - P.eggWidth / 2;
-    // Keep the outline and the shadow inside the screen too
-    const inset = 0.06 + P.shadowOffset;
-    placeWalls(atEgg * Math.tan(hHalf) - inset, atEgg * Math.tan(vHalf) - inset);
+    // The walls sit outside the screen, so the egg can slip partly out of view before it bounces back
+    const out = P.wallOut * P.eggWidth;
+    const hx = atEgg * Math.tan(hHalf);
+    const hz = atEgg * Math.tan(vHalf);
+    placeWalls(hx + out, hz + out);
+    // Zero position: the middle of the free area (between the title and the panel)
+    const r = focus.getBoundingClientRect();
+    const c = container.getBoundingClientRect();
+    posePos.x = (((r.left + r.width / 2) - c.left) / w * 2 - 1) * hx;
+    posePos.z = (((r.top + r.height / 2) - c.top) / h * 2 - 1) * hz;
   }
-  new ResizeObserver(resize).observe(container);
+  const ro = new ResizeObserver(resize);
+  ro.observe(container);
+  if (focus !== container) ro.observe(focus);
 
   buildEgg();
   readBody(currPos, currRot);
@@ -306,11 +307,6 @@ export async function createWorld(container, P) {
   return {
     paint: shell.paint,
     setTilt(x, z) { tilt.x = x; tilt.z = z; },
-    setCenterPull(on) {
-      if (on === centerPull) return;
-      centerPull = on;
-      eggBody.setAngularDamping(on ? Math.max(1.6, P.angDamp) : P.angDamp);
-    },
     setGlow(color, amount) { eggMat.emissive.set(color).multiplyScalar(amount); },
     setShadowColor(color) { shadowMat.color.set(color); },
     // Outline color and a swell (0 = normal width)
@@ -319,8 +315,9 @@ export async function createWorld(container, P) {
       outlinePulse = pulse;
       outline.scale.setScalar(1 + P.outline * (1 + pulse));
     },
-    // true: glide to the zero position (setting the timer). false: let it roll.
-    setPosed(on) {
+    // true: glide to the zero position (setting the timer, or idle). false: let it roll.
+    setPosed(on, speed = 9) {
+      poseSpeed = speed;
       if (on === posed) return;
       posed = on;
       if (on) {
