@@ -41,9 +41,14 @@ export function createLab(P, world, diag) {
   cam.add(P, 'fov', 1, 60, 0.5).name('perspektiv (fov)').onChange(changed);
   cam.add(P, 'view', 3, 16, 0.1).name('utsnitt (zoom)').onChange(changed);
 
+  const gyro = gui.addFolder('Gyro');
+  gyro.add(P, 'gyroRange', 5, 60, 1).name('vinkel for full fart (°)').onChange(repaint);
+  gyro.add(P, 'gyroDead', 0, 10, 0.1).name('dødsone (°)').onChange(repaint);
+  gyro.add(P, 'gyroSmooth', 0.01, 1, 0.01).name('glatting (s)').onChange(repaint);
+  gyro.add(P, 'tilt', 0.1, 1.5, 0.01).name('vippe-styrke').onChange(changed);
+
   const phys = gui.addFolder('Fysikk');
   phys.add(P, 'gravity', 4, 40, 0.5).name('tyngdekraft').onChange(changed);
-  phys.add(P, 'tilt', 0.1, 1, 0.01).name('vippe-styrke').onChange(changed);
   phys.add(P, 'friction', 0, 1.5, 0.01).name('friksjon').onChange(changed);
   phys.add(P, 'bounce', 0, 1, 0.01).name('sprett').onChange(changed);
   phys.add(P, 'linDamp', 0, 2, 0.01).name('demping fart').onChange(changed);
@@ -95,7 +100,7 @@ export function createLab(P, world, diag) {
   gui.add(actions, 'reset').name('↺ Nullstill');
 
   // Folders start closed, and on small screens the whole lab too, so the egg is visible
-  [shape, look, cam, phys, beh].forEach((f) => f.close());
+  [shape, look, cam, gyro, phys, beh].forEach((f) => f.close());
   if (window.innerWidth < 600) gui.close();
   return gui;
 }

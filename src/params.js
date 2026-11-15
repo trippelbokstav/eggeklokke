@@ -31,9 +31,14 @@ export const DEFAULT_PARAMS = {
   fov: 4,                 // small = flat, far away
   view: 5.3,              // visible size of the short screen side, in scene units
 
+  // Gyro (tilting the phone)
+  tilt: 0.66,             // how much of gravity tilting can turn sideways (strength at full tilt)
+  gyroRange: 25,          // degrees of tilt for full strength (low = sensitive)
+  gyroDead: 1.5,          // degrees around "flat" that are ignored (calm hands)
+  gyroSmooth: 0.1,        // seconds: how softly the egg follows the tilt (low = quick)
+
   // Physics
   gravity: 18,
-  tilt: 0.66,             // how much of gravity tilting can turn sideways
   friction: 0.7,
   bounce: 0.41,
   linDamp: 0.15,

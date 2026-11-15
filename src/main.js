@@ -57,7 +57,7 @@ let theme = {};
 let lastPaint = 0;
 let lastText = '';
 
-const input = createInput(stage);
+const input = createInput(stage, P);
 
 // The first tap unlocks sound. Gyro access must be asked from a real "click" (iOS ignores
 // pointerdown for this), so ask on clicks until it is granted (Start is a click too).
@@ -214,7 +214,7 @@ world.start((dt, now) => {
   if (idle && !centerMode) { centerMode = true; input.recalibrate(); world.setPosed(true, P.homeSpeed); }
   if (!idle && centerMode) { centerMode = false; if (running) world.setPosed(false); }
   const want = centerMode ? { x: 0, z: 0 } : input.tilt();
-  const k = 1 - Math.exp(-dt * 10);
+  const k = 1 - Math.exp(-dt / Math.max(0.01, P.gyroSmooth)); // smoothing time in seconds
   tiltNow.x += (want.x - tiltNow.x) * k;
   tiltNow.z += (want.z - tiltNow.z) * k;
   world.setTilt(tiltNow.x, tiltNow.z);

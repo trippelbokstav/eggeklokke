@@ -1,10 +1,17 @@
 // Tilt input: gyro (phone tilt) and finger/mouse drag. Both give a tilt of -1..1 on x and z.
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-const GYRO_RANGE = 25;      // degrees of tilt for full effect
 const MOVE_THRESHOLD = 0.1; // how much the tilt must change to count as "playing"
 
-export function createInput(stage) {
+// Degrees of tilt -> -1..1, with a dead zone in the middle and full effect at `range` degrees
+function shape(deg, range, dead) {
+  const a = Math.abs(deg);
+  if (a <= dead) return 0;
+  return clamp(Math.sign(deg) * (a - dead) / Math.max(1, range - dead), -1, 1);
+}
+
+// P: params (gyroRange, gyroDead are read live, so the lab can change them)
+export function createInput(stage, P) {
   let beta = null;
   let gamma = null;
   let base = null;          // neutral phone angle
@@ -39,8 +46,8 @@ export function createInput(stage) {
       base = { beta, gamma };
       anchor = { x: 0, z: 0 };
     }
-    gyro.x = clamp((gamma - base.gamma) / GYRO_RANGE, -1, 1);
-    gyro.z = clamp((beta - base.beta) / GYRO_RANGE, -1, 1);
+    gyro.x = shape(gamma - base.gamma, P.gyroRange, P.gyroDead);
+    gyro.z = shape(beta - base.beta, P.gyroRange, P.gyroDead);
     if (Math.hypot(gyro.x - anchor.x, gyro.z - anchor.z) > MOVE_THRESHOLD) {
       anchor = { x: gyro.x, z: gyro.z };
       touch();
