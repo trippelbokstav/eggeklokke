@@ -74,6 +74,31 @@ export async function createWorld(container, P, focus = container) {
   const flatten = new THREE.Matrix4();
   const shift = new THREE.Matrix4();
 
+  // ---------- Game layer: small eggs to collect, and dots that show where the next ones come ----------
+  // Two small eggs take turns: one pops while the next one appears.
+  const minis = [0, 1].map(() => {
+    const tex = createEggTexture();
+    const m = new THREE.Mesh(egg.geometry, new THREE.MeshToonMaterial({ map: tex.texture, gradientMap }));
+    m.visible = false;
+    m.userData = { tex, mode: 'off', t: 0, x: 0, z: 0 }; // mode: in | idle | pop | off
+    scene.add(m);
+    return m;
+  });
+  let miniIdx = 0;
+  const dotGeo = new THREE.CircleGeometry(1, 32);
+  const dotMat = new THREE.MeshBasicMaterial({ color: 0xa9c8da, depthWrite: false });
+  const dots = [0, 1].map(() => {
+    const m = new THREE.Mesh(dotGeo, dotMat);
+    m.rotation.x = -Math.PI / 2;
+    m.visible = false;
+    m.renderOrder = -2;
+    m.userData = { t: 0, x: NaN, z: NaN };
+    scene.add(m);
+    return m;
+  });
+  const floorHalf = { x: 3, z: 5 }; // visible half size on the floor, set in resize()
+  const backOut = (t) => { const c1 = 1.70158; const c3 = c1 + 1; return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2; };
+
   // ---------- Rapier ----------
   const world = new RAPIER.World({ x: 0, y: -P.gravity, z: 0 });
   world.timestep = STEP;
@@ -142,6 +167,7 @@ export async function createWorld(container, P, focus = container) {
     egg.geometry = geo;
     outline.geometry = geo;
     shadow.geometry = geo;
+    minis.forEach((m) => { m.geometry = geo; });
     if (eggCollider) world.removeCollider(eggCollider, true);
     // Low-res hull for physics: the egg still wobbles, but collisions stay cheap
     const hull = new THREE.LatheGeometry(eggProfile(P.eggLength, P.eggWidth, P.eggPointy, 10), 14);
@@ -202,8 +228,8 @@ export async function createWorld(container, P, focus = container) {
       v.z - prevVel.z - wg.z * STEP
     );
     prevVel.set(v.x, v.y, v.z);
-    const threshold = 1.1;
-    if (dv > threshold && bumpHandler) bumpHandler(Math.min(1, (dv - threshold) / 5));
+    const threshold = 0.8;
+    if (dv > threshold && bumpHandler) bumpHandler(Math.min(1, (dv - threshold) / 4));
 
     // Safety: if the egg ends up well outside the screen (e.g. after a resize), put it back inside
     const p = eggBody.translation();
@@ -215,6 +241,36 @@ export async function createWorld(container, P, focus = container) {
         z: THREE.MathUtils.clamp(p.z, -bounds.z + m, bounds.z - m)
       }, true);
     }
+  }
+
+  // ---------- Game layer animation ----------
+  function animateGame(dt) {
+    const sc = P.miniScale;
+    minis.forEach((m) => {
+      const u = m.userData;
+      if (u.mode === 'off') return;
+      u.t += dt;
+      let k = 1;
+      if (u.mode === 'in') {
+        const t = Math.min(1, u.t / 0.35);
+        k = backOut(t);
+        if (t >= 1) { u.mode = 'idle'; u.t = 0; }
+      } else if (u.mode === 'idle') {
+        k = 1 + 0.04 * Math.sin(u.t * 4); // gentle breathing
+      } else if (u.mode === 'pop') {
+        const t = Math.min(1, u.t / 0.25);
+        k = t < 0.35 ? 1 + 0.5 * (t / 0.35) : 1.5 * (1 - (t - 0.35) / 0.65);
+        if (t >= 1) { u.mode = 'off'; m.visible = false; }
+      }
+      m.scale.setScalar(sc * Math.max(0.0001, k));
+      m.position.set(u.x, posePos.y * sc * Math.max(0.0001, k), u.z);
+      m.quaternion.copy(poseRot);
+    });
+    dots.forEach((d) => {
+      if (!d.visible) return;
+      d.userData.t += dt;
+      d.scale.setScalar(P.markerSize * backOut(Math.min(1, d.userData.t / 0.3)));
+    });
   }
 
   // ---------- Camera: straight down, far away ----------
@@ -231,6 +287,8 @@ export async function createWorld(container, P, focus = container) {
     camera.far = dist * 1.5;
     camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
+    floorHalf.x = dist * Math.tan(hHalf);
+    floorHalf.z = dist * Math.tan(vHalf);
     // Visible area at the height of the egg's middle, a little inside the edge
     const atEgg = dist - P.eggWidth / 2;
     // The walls sit outside the screen, so the egg can slip partly out of view before it bounces back
@@ -300,6 +358,7 @@ export async function createWorld(container, P, focus = container) {
     shadow.matrix.copy(shift).multiply(flatten).multiply(egg.matrixWorld);
     shadowMat.opacity = P.shadowOpacity * Math.max(0.35, 1 - lift * 0.3);
 
+    animateGame(dt);
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
@@ -344,6 +403,55 @@ export async function createWorld(container, P, focus = container) {
       }, true);
     },
     onBump(cb) { bumpHandler = cb; },
+    // Where the big egg is now (on the floor)
+    eggPos() { return { x: egg.position.x, z: egg.position.z }; },
+    game: {
+      // Show the next small egg at x, z with number n. colors: { shell, digit }
+      showTarget(x, z, n, colors) {
+        miniIdx = 1 - miniIdx;
+        const m = minis[miniIdx];
+        m.userData.tex.paint(String(n), { shell: colors.shell, dot: colors.shell, digit: colors.digit },
+          { dotCount: 0, dotSize: 1, digitSize: 300, digitRepeat: 1 });
+        Object.assign(m.userData, { mode: 'in', t: 0, x, z });
+        m.visible = true;
+      },
+      // The current small egg pops
+      popTarget() {
+        const m = minis[miniIdx];
+        if (m.userData.mode !== 'off') Object.assign(m.userData, { mode: 'pop', t: 0 });
+      },
+      // The dots that show where the next eggs come: [{ x, z }, ...]
+      setDots(list) {
+        dots.forEach((d, i) => {
+          const p = list[i];
+          d.visible = !!p;
+          if (!p) return;
+          if (p.x !== d.userData.x || p.z !== d.userData.z) d.userData.t = 0; // new dot: pop in
+          d.userData.x = p.x;
+          d.userData.z = p.z;
+          d.position.set(p.x, 0.003, p.z);
+        });
+      },
+      setDotColor(color) { dotMat.color.set(color); },
+      clear() {
+        minis.forEach((m) => { if (m.userData.mode !== 'off') Object.assign(m.userData, { mode: 'pop', t: 0 }); });
+        dots.forEach((d) => { d.visible = false; d.userData.x = NaN; });
+      },
+      // The free area (between the title and the panel) in floor coordinates
+      freeArea() {
+        const r = focus.getBoundingClientRect();
+        const c = container.getBoundingClientRect();
+        const X = (px) => ((px - c.left) / c.width * 2 - 1) * floorHalf.x;
+        const Z = (py) => ((py - c.top) / c.height * 2 - 1) * floorHalf.z;
+        return { x0: X(r.left), x1: X(r.right), z0: Z(r.top), z1: Z(r.bottom) };
+      },
+      // Floor point -> screen pixels (for the floating "+1" labels)
+      project(x, z) {
+        const v = new THREE.Vector3(x, 0, z).project(camera);
+        const c = container.getBoundingClientRect();
+        return { x: c.left + (v.x + 1) / 2 * c.width, y: c.top + (1 - v.y) / 2 * c.height };
+      }
+    },
     stats,
     start(hook) {
       frameHook = hook;

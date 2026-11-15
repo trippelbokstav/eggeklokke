@@ -16,12 +16,14 @@ The first, simple SVG version is kept on the branch `v1-svg`.
 - **Walls** sit just outside the screen (`wallOut`), so the egg can slip half out of view. The canvas fills the whole screen behind the UI.
 - **The clock** is painted on a canvas texture in low contrast, repeated around the egg.
 - **Color:** the egg keeps the background color. The outline steps every 30 s from white via yellow to red, and swells on the beeps in the last 10 s.
+- **The game** (`src/game.js`): while the egg boils, roll over small yellow eggs in order (1, 2, 3 …). Two dots show where the next two appear. You must roll well over an egg (`pickup`), the edge is not enough. Take the next one within `comboSec` and the streak (rekke) grows: each egg is worth the streak number. At the alarm the game ends, the egg glides home and the score shows.
 - **Haptics** (`@capacitor/haptics`): clicks on buttons, ticks at the end, bumps when the egg hits the dish. Only in the iOS app.
 
 | File | What |
 |---|---|
 | `src/params.js` | all tunable values (defaults) |
 | `src/lab.js` | the lab: sliders for everything (`?lab`) |
+| `src/game.js` | the egg-collecting game |
 | `src/main.js` | UI, timer, colors, idle logic |
 | `src/world.js` | three.js scene + Rapier physics |
 | `src/eggTexture.js` | painting the shell |

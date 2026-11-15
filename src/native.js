@@ -44,9 +44,11 @@ export const haptic = {
     if (now - lastBump < 90) return; // avoid buzzing on every contact frame
     lastBump = now;
     if (!isNative) return;
-    const style = strength > 0.75 ? ImpactStyle.Heavy : strength > 0.4 ? ImpactStyle.Medium : ImpactStyle.Light;
+    const style = strength > 0.5 ? ImpactStyle.Heavy : strength > 0.15 ? ImpactStyle.Medium : ImpactStyle.Light;
     safe(() => Haptics.impact({ style }));
   },
+  // A small egg is collected: a crisp "success" tap
+  pickup() { if (isNative) safe(() => Haptics.notification({ type: NotificationType.Success })); },
   // Alarm: "success" pattern followed by a long buzz
   alarm() {
     if (isNative) {

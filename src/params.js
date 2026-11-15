@@ -44,6 +44,13 @@ export const DEFAULT_PARAMS = {
   linDamp: 0.15,
   angDamp: 0.35,
 
+  // Game: collect small eggs while the big one boils
+  gameOn: true,
+  miniScale: 0.3,         // size of the small eggs compared with the big one
+  pickup: 0.45,           // how close the big egg's middle must come (0 = dead center, 1 = edge touch)
+  comboSec: 4,            // seconds to reach the next egg to keep the streak (rekke)
+  markerSize: 0.09,       // size of the dots that show where the next eggs come
+
   // Behaviour
   idleSec: 10,            // glide home to the zero position after this many seconds without play
   homeSpeed: 1.8,         // how fast it glides home (higher = faster)

@@ -29,6 +29,12 @@ function tone(freq, dur, vol, when = 0, type = 'sine') {
 export const sound = {
   beep() { tone(880, 0.09, 0.15); },
   alarm() { for (let i = 0; i < 4; i++) tone(1320, 0.12, 0.35, i * 0.18); },
-  // Soft "tok" when the egg hits the dish. strength 0..1
+  // A small egg is collected. The tone rises with the streak.
+  pickup(streak) {
+    const f = 660 * Math.pow(2, Math.min(streak - 1, 12) / 12);
+    tone(f, 0.08, 0.16);
+    tone(f * 1.5, 0.12, 0.14, 0.07);
+  },
+  // Soft "tok" when the egg hits a wall. strength 0..1
   bump(strength) { tone(170 + strength * 90, 0.07, 0.04 + strength * 0.14, 0, 'triangle'); }
 };

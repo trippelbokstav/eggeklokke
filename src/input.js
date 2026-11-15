@@ -48,6 +48,8 @@ export function createInput(stage, P) {
     }
     gyro.x = shape(gamma - base.gamma, P.gyroRange, P.gyroDead);
     gyro.z = shape(beta - base.beta, P.gyroRange, P.gyroDead);
+    // Steering: the phone is tilted (outside the dead zone and a bit more), or it moved
+    if (Math.hypot(gyro.x, gyro.z) > 0.2) touch();
     if (Math.hypot(gyro.x - anchor.x, gyro.z - anchor.z) > MOVE_THRESHOLD) {
       anchor = { x: gyro.x, z: gyro.z };
       touch();

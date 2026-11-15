@@ -54,6 +54,13 @@ export function createLab(P, world, diag) {
   phys.add(P, 'linDamp', 0, 2, 0.01).name('demping fart').onChange(changed);
   phys.add(P, 'angDamp', 0, 3, 0.01).name('demping rotasjon').onChange(changed);
 
+  const game = gui.addFolder('Spill');
+  game.add(P, 'gameOn').name('spill på').onChange(repaint);
+  game.add(P, 'miniScale', 0.1, 0.6, 0.01).name('småegg størrelse').onChange(repaint);
+  game.add(P, 'pickup', 0.05, 1, 0.01).name('treff-radius').onChange(repaint);
+  game.add(P, 'comboSec', 1, 10, 0.5).name('rekke-tid (s)').onChange(repaint);
+  game.add(P, 'markerSize', 0.03, 0.3, 0.01).name('prikk størrelse').onChange(repaint);
+
   const beh = gui.addFolder('Oppførsel');
   beh.add(P, 'idleSec', 2, 60, 1).name('hjem etter (s)').onChange(changed);
   beh.add(P, 'homeSpeed', 0.5, 10, 0.1).name('hjem-fart').onChange(changed);
@@ -100,7 +107,7 @@ export function createLab(P, world, diag) {
   gui.add(actions, 'reset').name('↺ Nullstill');
 
   // Folders start closed, and on small screens the whole lab too, so the egg is visible
-  [shape, look, cam, gyro, phys, beh].forEach((f) => f.close());
+  [shape, look, cam, gyro, phys, game, beh].forEach((f) => f.close());
   if (window.innerWidth < 600) gui.close();
   return gui;
 }

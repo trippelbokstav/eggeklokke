@@ -2,6 +2,7 @@
 import { loadParams } from './params.js';
 import { createWorld } from './world.js';
 import { createInput } from './input.js';
+import { createGame } from './game.js';
 import { haptic, hapticDiag } from './native.js';
 import { sound, unlockAudio } from './sound.js';
 import { totalSeconds, fmt, boilTemp, altFactor, NAMES, SIZENAMES } from './timer.js';
@@ -16,6 +17,7 @@ const resetBtn = $('reset');
 const altEl = $('alt');
 const altOut = $('altOut');
 const altNote = $('altNote');
+const scoreEl = $('score');
 
 // All tunable values live in params.js. The ⚙︎ button (or ?lab) opens the lab to edit them live.
 // Values tuned in the lab are saved in this browser and used every time.
@@ -108,6 +110,9 @@ function start() {
   haptic.press();
   input.touch();
   if (world) world.setPosed(false);
+  if (game && P.gameOn) game.start();
+  scoreEl.className = 'score';
+  scoreEl.textContent = '';
   updateTip();
   try {
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { wake = w; }).catch(() => {});
@@ -126,7 +131,17 @@ function finish() {
   alarmStart = performance.now();
   lastAlarm = 0;
   centerMode = false;
-  world.setPosed(false); // free the egg, so it can jump
+  // The game ends: the egg rolls back to the start position, and we show the score
+  const played = game && game.active;
+  if (game) game.stop();
+  world.setPosed(true, 3);
+  if (played) {
+    const st = game.stats(performance.now());
+    scoreEl.className = 'score final';
+    scoreEl.textContent = st.bonus > 0
+      ? `${st.eggs} egg + ${st.bonus} bonus = ${st.total}`
+      : `${st.eggs} egg samlet`;
+  }
 }
 
 function reset() {
@@ -140,6 +155,9 @@ function reset() {
   goBtn.classList.remove('alarm');
   resetBtn.hidden = true;
   subEl.textContent = 'Start klokka når egget går ned i kokende vann.';
+  if (game) game.stop();
+  scoreEl.className = 'score';
+  scoreEl.textContent = '';
   if (world) world.setPosed(true);
   updateTip();
   refreshIdle();
@@ -158,14 +176,38 @@ updateTip();
 
 // ---------- 3D ----------
 let world = null;
+let game = null;
 world = await createWorld($('scene'), P, stage);
+
+// The little game: collect small eggs while the big one boils
+game = createGame(world, P, {
+  colors: () => ({ shell: P.digitColor, digit: theme.bg }),
+  onPickup(e) {
+    haptic.pickup();
+    sound.pickup(e.combo);
+    floatLabel(e);
+  }
+});
+
+// A "+1" (or "+1 ×3" in a streak) that floats up from the small egg
+function floatLabel(e) {
+  const p = world.game.project(e.x, e.z);
+  const el = document.createElement('div');
+  el.className = 'float';
+  el.textContent = '+' + e.combo; // in a streak, each egg is worth more
+  el.style.left = p.x + 'px';
+  el.style.top = p.y + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
 stage.classList.add('ready');
 // Debugging in the console: __egg.skip(330) jumps 330 seconds ahead
-window.__egg = { ...world.debug, world, P, skip(s) { if (running) endAt -= s * 1000; } };
+window.__egg = { ...world.debug, world, P, game, skip(s) { if (running) endAt -= s * 1000; } };
 
 function applyTheme() {
   theme = { alert: cssVar('--alert') || '#C2410C', bg: cssVar('--bg') || '#E3ECEF' };
   world.setShadowColor(cssVar('--ink'));
+  world.game.setDotColor(P.lineColor);
 }
 applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
@@ -242,6 +284,11 @@ world.start((dt, now) => {
     const f = sec - remaining; // 0 right after a tick
     if (remaining <= 10) pulse = P.pulse * Math.exp(-f * 5);
     else if (sec % 30 === 0) pulse = P.pulse * 0.4 * Math.exp(-f * 4);
+    if (game.active) {
+      game.update(now);
+      const st = game.stats(now);
+      scoreEl.textContent = st.eggs === 0 ? '' : (st.streak > 1 ? `🥚 ${st.total}  ·  rekke ×${st.streak}` : `🥚 ${st.total}`);
+    }
     if (remaining <= 0) finish();
   } else if (done) {
     text = '0:00';
@@ -251,7 +298,6 @@ world.start((dt, now) => {
       lastAlarm = now;
       sound.alarm();
       haptic.alarm();
-      world.jump(P.alarmJump);
     }
     if (now - alarmStart > 90000) reset();
   } else {
