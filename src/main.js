@@ -183,7 +183,7 @@ world = await createWorld($('scene'), P, stage);
 game = createGame(world, P, {
   digitColor: () => theme.bg,
   onTick(urgency, red) {
-    sound.tick(urgency);
+    if (P.ticks) sound.tick(urgency);
     if (red) haptic.tick();
   },
   onPickup(e) {
@@ -211,7 +211,7 @@ window.__egg = { ...world.debug, world, P, game, skip(s) { if (running) endAt -=
 function applyTheme() {
   theme = { alert: cssVar('--alert') || '#C2410C', bg: cssVar('--bg') || '#E3ECEF' };
   world.setShadowColor(cssVar('--ink'));
-  world.game.setDotColor(P.lineColor);
+  world.game.setDotColors(P.digitColor, P.lineColor);
 }
 applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
@@ -234,6 +234,10 @@ async function toggleLab() {
       haptics: hapticDiag,
       gyro: input.diag,
       testHaptic() { haptic.alarm(); },
+      testLight() { haptic.test('light'); },
+      testMedium() { haptic.test('medium'); },
+      testHeavy() { haptic.test('heavy'); },
+      testPickup() { haptic.pickup(); },
       askGyro() { input.requestPermission().then(updateTip); }
     });
     lab.open();

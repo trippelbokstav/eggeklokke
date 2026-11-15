@@ -61,7 +61,8 @@ export function createLab(P, world, diag) {
   game.add(P, 'comboSec', 1, 10, 0.5).name('bonus-tid per egg (s)').onChange(repaint);
   game.addColor(P, 'miniOrange').name('nedtelling midt').onChange(repaint);
   game.add(P, 'ticks').name('tikking').onChange(repaint);
-  game.add(P, 'markerSize', 0.03, 0.3, 0.01).name('prikk størrelse').onChange(repaint);
+  game.add(P, 'dotNextSize', 0.005, 0.2, 0.005).name('prikk neste (gul)').onChange(repaint);
+  game.add(P, 'dotLaterSize', 0.005, 0.2, 0.005).name('prikk etter (blå)').onChange(repaint);
 
   const beh = gui.addFolder('Oppførsel');
   beh.add(P, 'idleSec', 2, 60, 1).name('hjem etter (s)').onChange(changed);
@@ -99,7 +100,11 @@ export function createLab(P, world, diag) {
     d.add(g, 'events').name('gyro-hendelser').disable().listen();
     d.add(g, 'beta').name('vipp fram/bak').disable().listen();
     d.add(g, 'gamma').name('vipp sideveis').disable().listen();
-    d.add(diag, 'testHaptic').name('📳 Test vibrasjon');
+    d.add(diag, 'testHaptic').name('📳 Test alarm-vibrasjon');
+    d.add(diag, 'testLight').name('Test lett støt');
+    d.add(diag, 'testMedium').name('Test middels støt (vegg)');
+    d.add(diag, 'testHeavy').name('Test kraftig støt (vegg)');
+    d.add(diag, 'testPickup').name('Test plukk-egg');
     d.add(diag, 'askGyro').name('🧭 Be om gyro-tilgang');
     d.close();
   }

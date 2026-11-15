@@ -37,18 +37,31 @@ export const haptic = {
   // Firm press on Start / Cancel
   press() { if (isNative) safe(() => Haptics.impact({ style: ImpactStyle.Medium })); },
   // Tiny tick for the last 10 seconds
-  tick() { if (isNative) safe(() => Haptics.impact({ style: ImpactStyle.Light })); },
+  tick() { if (isNative) safe(() => Haptics.impact({ style: ImpactStyle.Medium })); },
   // The egg hits the dish. strength 0..1
   bump(strength) {
     const now = performance.now();
     if (now - lastBump < 90) return; // avoid buzzing on every contact frame
     lastBump = now;
     if (!isNative) return;
-    const style = strength > 0.5 ? ImpactStyle.Heavy : strength > 0.15 ? ImpactStyle.Medium : ImpactStyle.Light;
+    // Light impacts are almost impossible to feel, so walls are always medium or heavy
+    const style = strength > 0.3 ? ImpactStyle.Heavy : ImpactStyle.Medium;
     safe(() => Haptics.impact({ style }));
   },
-  // A small egg is collected: a crisp "success" tap
-  pickup() { if (isNative) safe(() => Haptics.notification({ type: NotificationType.Success })); },
+  // A small egg is collected: a firm tap followed by a crisp "success" pattern
+  pickup() {
+    if (!isNative) return;
+    safe(() => Haptics.impact({ style: ImpactStyle.Heavy }));
+    safe(() => Haptics.notification({ type: NotificationType.Success }));
+  },
+  // For the Diagnose test buttons
+  test(kind) {
+    if (!isNative) return;
+    if (kind === 'light') safe(() => Haptics.impact({ style: ImpactStyle.Light }));
+    if (kind === 'medium') safe(() => Haptics.impact({ style: ImpactStyle.Medium }));
+    if (kind === 'heavy') safe(() => Haptics.impact({ style: ImpactStyle.Heavy }));
+    if (kind === 'success') safe(() => Haptics.notification({ type: NotificationType.Success }));
+  },
   // Alarm: "success" pattern followed by a long buzz
   alarm() {
     if (isNative) {

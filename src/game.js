@@ -16,7 +16,7 @@ export function createGame(world, P, hooks) {
   let combo = 0;
   let lastPick = -1e9;
   let target = null;   // { x, z, n, at }
-  let queue = [];      // the two dots: [{ x, z }, { x, z }]
+  let plan = [];       // upcoming spots; the dots show the first two
   let nextTick = 0;
 
   // Countdown 0..1 for the current egg (>= 1 = too late for the streak)
@@ -29,28 +29,70 @@ export function createGame(world, P, hooks) {
   }
   const colors = (f) => ({ shell: countdownColor(f), digit: hooks.digitColor() });
 
-  // A random free spot in view, away from the big egg and the other eggs/dots
-  function randomSpot(avoid) {
+  // The play area in floor coordinates, kept so the whole small egg is in view
+  function area() {
     const a = world.game.freeArea();
-    const m = P.eggLength * P.miniScale * 0.6 + 0.25; // keep the whole small egg in view
-    const x0 = Math.min(a.x0, a.x1) + m;
-    const x1 = Math.max(a.x0, a.x1) - m;
-    const z0 = Math.min(a.z0, a.z1) + m;
-    const z1 = Math.max(a.z0, a.z1) - m;
-    const minD = P.eggWidth * 0.9;
-    let p = null;
-    for (let i = 0; i < 40; i++) {
-      p = { x: x0 + Math.random() * Math.max(0, x1 - x0), z: z0 + Math.random() * Math.max(0, z1 - z0) };
-      if (avoid.every((q) => dist(p, q) > minD)) return p;
+    const m = P.eggLength * P.miniScale * 0.6 + 0.15;
+    return {
+      x0: Math.min(a.x0, a.x1) + m, x1: Math.max(a.x0, a.x1) - m,
+      z0: Math.min(a.z0, a.z1) + m, z1: Math.max(a.z0, a.z1) - m
+    };
+  }
+  const clampTo = (p, A) => ({ x: Math.min(A.x1, Math.max(A.x0, p.x)), z: Math.min(A.z1, Math.max(A.z0, p.z)) });
+  const rnd = (a, b) => a + Math.random() * (b - a);
+
+  // Little "setups" instead of pure chance: a column to roll down (or up), a row across,
+  // a diagonal, or a single far jump. E.g. one egg at the top, then three in a row going down.
+  function pattern(from) {
+    const A = area();
+    const W = A.x1 - A.x0;
+    const H = A.z1 - A.z0;
+    const step = P.eggWidth * 0.75;
+    const jitter = () => rnd(-0.15, 0.15);
+    const pts = [];
+    const r = Math.random();
+    if (r < 0.4) {
+      // Column: start near the top (roll down) or the bottom (roll up)
+      const down = from.z > (A.z0 + A.z1) / 2; // start on the far side from where we are
+      const x = rnd(A.x0, A.x1);
+      const z = down ? A.z0 + rnd(0, H * 0.15) : A.z1 - rnd(0, H * 0.15);
+      const n = 3 + (Math.random() < 0.4 ? 1 : 0);
+      for (let i = 0; i < n; i++) pts.push({ x: x + jitter(), z: z + (down ? 1 : -1) * i * step });
+    } else if (r < 0.6) {
+      // Row across, starting on the far side
+      const right = from.x < (A.x0 + A.x1) / 2;
+      const z = rnd(A.z0, A.z1);
+      const x = right ? A.x1 - rnd(0, W * 0.1) : A.x0 + rnd(0, W * 0.1);
+      for (let i = 0; i < 3; i++) pts.push({ x: x + (right ? -1 : 1) * i * step, z: z + jitter() });
+    } else if (r < 0.8) {
+      // Diagonal from a corner
+      const sx = Math.random() < 0.5 ? 1 : -1;
+      const sz = Math.random() < 0.5 ? 1 : -1;
+      const x = sx > 0 ? A.x0 + rnd(0, W * 0.15) : A.x1 - rnd(0, W * 0.15);
+      const z = sz > 0 ? A.z0 + rnd(0, H * 0.15) : A.z1 - rnd(0, H * 0.15);
+      const d = step * 0.8;
+      for (let i = 0; i < 3; i++) pts.push({ x: x + sx * i * d, z: z + sz * i * d * 1.3 });
+    } else {
+      // A single far jump
+      let best = null;
+      for (let i = 0; i < 8; i++) {
+        const p = { x: rnd(A.x0, A.x1), z: rnd(A.z0, A.z1) };
+        if (!best || dist(p, from) > dist(best, from)) best = p;
+      }
+      pts.push(best);
     }
-    return p;
+    return pts.map((p) => clampTo(p, A));
+  }
+
+  function refill(from) {
+    while (plan.length < 3) plan.push(...pattern(plan.length ? plan[plan.length - 1] : from));
   }
 
   function show(now) {
     target.at = now;
     nextTick = now + 500;
     world.game.showTarget(target.x, target.z, target.n, colors(0));
-    world.game.setDots(queue);
+    world.game.setDots(plan.slice(0, 2));
   }
 
   function pick(now) {
@@ -60,11 +102,11 @@ export function createGame(world, P, hooks) {
     lastPick = now;
     hooks.onPickup({ n: target.n, combo, eggs, bonus, x: target.x, z: target.z });
     world.game.popTarget();
-    // The first dot becomes the next egg, and a new dot appears
-    const next = queue.shift();
+    // The first dot becomes the next egg, and the plan moves on
+    const next = plan.shift();
     next.n = target.n + 1;
     target = next;
-    queue.push(randomSpot([world.eggPos(), target, ...queue]));
+    refill(target);
     show(now);
   }
 
@@ -75,11 +117,10 @@ export function createGame(world, P, hooks) {
       bonus = 0;
       combo = 0;
       lastPick = -1e9;
-      const e = world.eggPos();
-      target = { ...randomSpot([e]), n: 1 };
-      queue = [];
-      queue.push(randomSpot([e, target]));
-      queue.push(randomSpot([e, target, ...queue]));
+      plan = [];
+      refill(world.eggPos());
+      target = { ...plan.shift(), n: 1 };
+      refill(target);
       show(performance.now());
     },
     stop() {
@@ -92,7 +133,7 @@ export function createGame(world, P, hooks) {
       const f = progress(now);
       world.game.tintTarget(colors(f));
       if (f < 1 && now >= nextTick) {
-        if (P.ticks) hooks.onTick(f, f > 0.75);
+        hooks.onTick(f, f > 0.75);
         nextTick = now + (f < 0.5 ? 500 : f < 0.8 ? 300 : 160);
       }
       if (now - target.at < 300) return; // a fresh egg can't be taken the same instant it appears

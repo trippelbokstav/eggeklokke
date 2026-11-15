@@ -46,12 +46,13 @@ export const DEFAULT_PARAMS = {
 
   // Game: collect small eggs while the big one boils
   gameOn: true,
-  miniScale: 0.3,         // size of the small eggs compared with the big one
-  pickup: 0.45,           // how close the big egg's middle must come (0 = dead center, 1 = edge touch)
+  miniScale: 0.22,         // size of the small eggs compared with the big one
+  pickup: 0.8,           // how close the big egg's middle must come (0 = dead center, 1 = edge touch)
   comboSec: 4,            // seconds per small egg to keep the streak (its countdown: yellow -> orange -> red)
   miniOrange: '#F07C1E',  // middle color of the countdown (start = digitColor, end = outlineEnd, expired = lineColor)
-  ticks: true,            // tick sound during the countdown (and small vibrations in red)
-  markerSize: 0.09,       // size of the dots that show where the next eggs come
+  ticks: false,           // tick sound during the countdown (small vibrations in red are always on)
+  dotNextSize: 0.03,      // the dot for the next egg (yellow)
+  dotLaterSize: 0.025,    // the dot for the egg after that (light blue)
 
   // Behaviour
   idleSec: 10,            // glide home to the zero position after this many seconds without play
@@ -60,7 +61,7 @@ export const DEFAULT_PARAMS = {
   alarmJump: 0.8
 };
 
-const STORE_KEY = 'eggeklokke-lab-v4'; // bump when defaults change, so old lab values don't override them
+const STORE_KEY = 'eggeklokke-lab-v5'; // bump when defaults change, so old lab values don't override them
 
 export function loadParams(useStored) {
   const params = { ...DEFAULT_PARAMS };

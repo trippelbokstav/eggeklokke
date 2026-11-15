@@ -76,19 +76,57 @@ export async function createWorld(container, P, focus = container) {
 
   // ---------- Game layer: small eggs to collect, and dots that show where the next ones come ----------
   // Two small eggs take turns: one pops while the next one appears.
+  // The number sits flat on top of the small egg, like a sticker (not bent around the shell)
+  function makeLabel() {
+    const c = document.createElement('canvas');
+    c.width = 128;
+    c.height = 128;
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.rotation.z = 0;
+    mesh.renderOrder = 10;
+    let last = '';
+    mesh.userData.draw = (text, color) => {
+      const key = text + color;
+      if (key === last) return;
+      last = key;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, 128, 128);
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      let size = 92;
+      ctx.font = `600 ${size}px "Nunito", "Avenir Next", system-ui, sans-serif`;
+      const w = ctx.measureText(text).width;
+      if (w > 116) { size = Math.floor(size * 116 / w); ctx.font = `600 ${size}px "Nunito", "Avenir Next", system-ui, sans-serif`; }
+      ctx.fillText(text, 64, 68);
+      tex.needsUpdate = true;
+    };
+    return mesh;
+  }
   const minis = [0, 1].map(() => {
-    const tex = createEggTexture(256, 128);
+    const tex = createEggTexture(64, 32); // plain color only, so it is tiny
     const m = new THREE.Mesh(egg.geometry, new THREE.MeshToonMaterial({ map: tex.texture, gradientMap }));
     m.visible = false;
-    m.userData = { tex, mode: 'off', t: 0, x: 0, z: 0 }; // mode: in | idle | pop | off
+    const label = makeLabel();
+    label.visible = false;
+    scene.add(label);
+    m.userData = { tex, label, mode: 'off', t: 0, x: 0, z: 0 }; // mode: in | idle | pop | off
     scene.add(m);
     return m;
   });
   let miniIdx = 0;
   const dotGeo = new THREE.CircleGeometry(1, 32);
-  const dotMat = new THREE.MeshBasicMaterial({ color: 0xa9c8da, depthWrite: false });
-  const dots = [0, 1].map(() => {
-    const m = new THREE.Mesh(dotGeo, dotMat);
+  // Dot 0 = the next egg (yellow), dot 1 = the one after (light blue): you can see the order
+  const dotMats = [
+    new THREE.MeshBasicMaterial({ color: 0xf0ae0b, depthWrite: false }),
+    new THREE.MeshBasicMaterial({ color: 0xa9c8da, depthWrite: false })
+  ];
+  const dots = [0, 1].map((i) => {
+    const m = new THREE.Mesh(dotGeo, dotMats[i]);
     m.rotation.x = -Math.PI / 2;
     m.visible = false;
     m.renderOrder = -2;
@@ -260,16 +298,23 @@ export async function createWorld(container, P, focus = container) {
       } else if (u.mode === 'pop') {
         const t = Math.min(1, u.t / 0.25);
         k = t < 0.35 ? 1 + 0.5 * (t / 0.35) : 1.5 * (1 - (t - 0.35) / 0.65);
-        if (t >= 1) { u.mode = 'off'; m.visible = false; }
+        if (t >= 1) { u.mode = 'off'; m.visible = false; u.label.visible = false; }
       }
-      m.scale.setScalar(sc * Math.max(0.0001, k));
-      m.position.set(u.x, posePos.y * sc * Math.max(0.0001, k), u.z);
+      const kk = Math.max(0.0001, k);
+      m.scale.setScalar(sc * kk);
+      m.position.set(u.x, posePos.y * sc * kk, u.z);
       m.quaternion.copy(poseRot);
+      // Flat number on top, sized to the small egg's width
+      const lw = P.eggWidth * sc * kk * 0.9;
+      u.label.visible = m.visible;
+      u.label.scale.set(lw, lw, 1);
+      u.label.position.set(u.x, P.eggWidth * sc * kk + 0.01, u.z);
     });
     dots.forEach((d) => {
       if (!d.visible) return;
       d.userData.t += dt;
-      d.scale.setScalar(P.markerSize * backOut(Math.min(1, d.userData.t / 0.3)));
+      const size = d === dots[0] ? P.dotNextSize : P.dotLaterSize;
+      d.scale.setScalar(size * backOut(Math.min(1, d.userData.t / 0.3)));
     });
   }
 
@@ -417,8 +462,9 @@ export async function createWorld(container, P, focus = container) {
       // Recolor the current small egg (its countdown: yellow -> orange -> red -> light blue)
       tintTarget(colors) {
         const m = minis[miniIdx];
-        m.userData.tex.paint(String(m.userData.n), { shell: colors.shell, dot: colors.shell, digit: colors.digit },
-          { dotCount: 0, dotSize: 1, digitSize: 300, digitRepeat: 1 });
+        m.userData.tex.paint('', { shell: colors.shell, dot: colors.shell, digit: colors.shell },
+          { dotCount: 0, dotSize: 1, digitSize: 10, digitRepeat: 1 });
+        m.userData.label.userData.draw(String(m.userData.n), colors.digit);
       },
       // The current small egg pops
       popTarget() {
@@ -437,7 +483,7 @@ export async function createWorld(container, P, focus = container) {
           d.position.set(p.x, 0.003, p.z);
         });
       },
-      setDotColor(color) { dotMat.color.set(color); },
+      setDotColors(next, later) { dotMats[0].color.set(next); dotMats[1].color.set(later); },
       clear() {
         minis.forEach((m) => { if (m.userData.mode !== 'off') Object.assign(m.userData, { mode: 'pop', t: 0 }); });
         dots.forEach((d) => { d.visible = false; d.userData.x = NaN; });
@@ -448,7 +494,8 @@ export async function createWorld(container, P, focus = container) {
         const c = container.getBoundingClientRect();
         const X = (px) => ((px - c.left) / c.width * 2 - 1) * floorHalf.x;
         const Z = (py) => ((py - c.top) / c.height * 2 - 1) * floorHalf.z;
-        return { x0: X(r.left), x1: X(r.right), z0: Z(r.top), z1: Z(r.bottom) };
+        // Whole screen width, from the top of the screen down to the panel (the egg may roll a bit outside)
+        return { x0: -floorHalf.x, x1: floorHalf.x, z0: -floorHalf.z, z1: Z(r.bottom) };
       },
       // Floor point -> screen pixels (for the floating "+1" labels)
       project(x, z) {
