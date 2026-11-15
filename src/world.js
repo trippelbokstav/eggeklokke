@@ -257,17 +257,18 @@ export async function createWorld(container, P, focus = container) {
 
     world.step();
 
-    // Bump detection: a sudden change in velocity that gravity can't explain
+    // Wall bumps: a sudden SIDEWAYS change in velocity that gravity can't explain, close to a wall.
+    // (The egg rocking on the floor while it rolls changes the up/down velocity all the time,
+    // so that must not count, or it would buzz constantly.)
     const v = eggBody.linvel();
     const wg = world.gravity;
-    const dv = Math.hypot(
-      v.x - prevVel.x - wg.x * STEP,
-      v.y - prevVel.y - wg.y * STEP,
-      v.z - prevVel.z - wg.z * STEP
-    );
+    const dv = Math.hypot(v.x - prevVel.x - wg.x * STEP, v.z - prevVel.z - wg.z * STEP);
     prevVel.set(v.x, v.y, v.z);
-    const threshold = 0.8;
-    if (dv > threshold && bumpHandler) bumpHandler(Math.min(1, (dv - threshold) / 4));
+    const tp = eggBody.translation();
+    const reach = P.eggLength * 0.75;
+    const nearWall = bounds.x - Math.abs(tp.x) < reach || bounds.z - Math.abs(tp.z) < reach;
+    const threshold = 1.2;
+    if (nearWall && dv > threshold && bumpHandler) bumpHandler(Math.min(1, (dv - threshold) / 4));
 
     // Safety: if the egg ends up well outside the screen (e.g. after a resize), put it back inside
     const p = eggBody.translation();

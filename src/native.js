@@ -41,7 +41,7 @@ export const haptic = {
   // The egg hits the dish. strength 0..1
   bump(strength) {
     const now = performance.now();
-    if (now - lastBump < 90) return; // avoid buzzing on every contact frame
+    if (now - lastBump < 150) return; // one bump at a time, so each one can be felt
     lastBump = now;
     if (!isNative) return;
     // Light impacts are almost impossible to feel, so walls are always medium or heavy

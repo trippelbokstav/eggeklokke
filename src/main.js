@@ -219,7 +219,7 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme
 let lastBumpAt = 0;
 world.onBump((s) => {
   const t = performance.now();
-  if (t - lastBumpAt < 90) return; // one bump at a time, not one per physics step
+  if (t - lastBumpAt < 150) return; // one bump at a time, not one per physics step
   lastBumpAt = t;
   haptic.bump(s);
   sound.bump(s);
