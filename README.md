@@ -34,8 +34,8 @@ Gyro only works over https or in the app. On the dev server over the local netwo
 
 ## Lab
 
-Add `?lab` to the address (e.g. `http://192.168.x.x:5173/?lab`). Every value in `src/params.js`
-gets a slider. Values are saved in that browser. **Kopier verdier** shows the JSON:
+Tap the ⚙︎ button top left (or add `?lab` to the address). Every value in `src/params.js`
+gets a slider. Values are saved in that browser and used every time, also with the lab closed. **Kopier verdier** shows the JSON:
 paste it to Claude, and it becomes the new default in `src/params.js`.
 Add `?fps` for an FPS meter (`?lab&fps` for both).
 

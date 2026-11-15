@@ -17,9 +17,10 @@ const altEl = $('alt');
 const altOut = $('altOut');
 const altNote = $('altNote');
 
-// All tunable values live in params.js. With ?lab in the address you can edit them live.
+// All tunable values live in params.js. The ⚙︎ button (or ?lab) opens the lab to edit them live.
+// Values tuned in the lab are saved in this browser and used every time.
 const isLab = new URLSearchParams(location.search).has('lab');
-const P = loadParams(isLab);
+const P = loadParams(true);
 
 // ---------- Small color helpers ----------
 const hexToRgb = (h) => {
@@ -168,8 +169,19 @@ world.onBump((s) => {
   sound.bump(s);
 });
 
-// Lab: add ?lab to the address
-if (isLab) import('./lab.js').then((m) => m.createLab(P, world));
+// Lab: the ⚙︎ button toggles it (?lab opens it at start)
+let lab = null;
+async function toggleLab() {
+  if (!lab) {
+    const m = await import('./lab.js');
+    lab = m.createLab(P, world);
+    lab.open();
+    return;
+  }
+  lab.show(lab._hidden);
+}
+$('labBtn').addEventListener('click', toggleLab);
+if (isLab) toggleLab();
 
 // FPS meter: add ?fps to the address
 const fpsEl = new URLSearchParams(location.search).has('fps') ? document.createElement('div') : null;
