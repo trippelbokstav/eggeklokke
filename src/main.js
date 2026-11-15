@@ -1,4 +1,5 @@
 // Eggklokke 2: the clock is painted on an egg you can roll around while it boils
+import { loadParams } from './params.js';
 import { createWorld } from './world.js';
 import { createInput } from './input.js';
 import { haptic } from './native.js';
@@ -16,9 +17,9 @@ const altEl = $('alt');
 const altOut = $('altOut');
 const altNote = $('altNote');
 
-const IDLE_MS = 10000;           // roll back to the middle after this long without play
-const SHELL_START = '#FBF6EC';   // fresh egg
-const SHELL_END = '#F6D79C';     // done egg (the shell warms up step by step)
+// All tunable values live in params.js. With ?lab in the address you can edit them live.
+const isLab = new URLSearchParams(location.search).has('lab');
+const P = loadParams(isLab);
 
 // ---------- Small color helpers ----------
 const hexToRgb = (h) => {
@@ -47,7 +48,7 @@ let lastAlarm = 0;
 let wake = null;
 let centerMode = false;
 const tiltNow = { x: 0, z: 0 };
-let shellNow = hexToRgb(SHELL_START); // float rgb, eased every frame
+let shellNow = hexToRgb(P.colorStart); // float rgb, eased every frame
 let theme = {};
 let lastPaint = 0;
 let lastText = '';
@@ -67,7 +68,7 @@ document.addEventListener('pointerdown', unlock, { capture: true });
 function updateTip() {
   tipEl.textContent = input.gyroActive
     ? 'Vipp telefonen for å rulle egget.'
-    : 'Dra i panna for å rulle egget.';
+    : 'Dra på skjermen for å rulle egget.';
 }
 
 function refreshIdle() {
@@ -137,14 +138,14 @@ refreshIdle();
 updateTip();
 
 // ---------- 3D ----------
-const world = await createWorld(stage);
+const world = await createWorld(stage, P);
 stage.classList.add('ready');
 // Debugging in the console: __egg.skip(330) jumps 330 seconds ahead
-window.__egg = { ...world.debug, world, skip(s) { if (running) endAt -= s * 1000; } };
+window.__egg = { ...world.debug, world, P, skip(s) { if (running) endAt -= s * 1000; } };
 
 function applyTheme() {
-  theme = { yolk: cssVar('--yolk'), yolkInk: cssVar('--yolk-ink'), alert: cssVar('--alert') || '#C2410C' };
-  world.setTheme({ dish: cssVar('--track'), lip: cssVar('--line'), line: cssVar('--ink'), shadow: cssVar('--ink') });
+  theme = { alert: cssVar('--alert') || '#C2410C' };
+  world.setLineColor(cssVar('--ink'));
 }
 applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
@@ -158,6 +159,9 @@ world.onBump((s) => {
   sound.bump(s);
 });
 
+// Lab: add ?lab to the address
+if (isLab) import('./lab.js').then((m) => m.createLab(P, world));
+
 // FPS meter: add ?fps to the address
 const fpsEl = new URLSearchParams(location.search).has('fps') ? document.createElement('div') : null;
 if (fpsEl) {
@@ -170,7 +174,7 @@ if (fpsEl) {
 
 world.start((dt, now) => {
   // ---- Tilt, or roll back to the middle when nobody plays ----
-  const idle = input.idleFor() > IDLE_MS;
+  const idle = input.idleFor() > P.idleSec * 1000;
   if (idle && !centerMode) { centerMode = true; input.recalibrate(); }
   if (!idle && centerMode) centerMode = false;
   const want = centerMode ? { x: 0, z: 0 } : input.tilt();
@@ -183,7 +187,7 @@ world.start((dt, now) => {
   // ---- Time ----
   let text;
   let glow = 0;
-  let shellTarget = SHELL_START;
+  let shellTarget = P.colorStart;
   if (running) {
     const remaining = (endAt - Date.now()) / 1000;
     const sec = Math.ceil(remaining);
@@ -198,7 +202,7 @@ world.start((dt, now) => {
     // The shell warms up one small step every 30 seconds
     const elapsed = total - Math.max(0, remaining);
     const steps = Math.max(1, Math.floor(total / 30));
-    shellTarget = mix(SHELL_START, SHELL_END, Math.min(1, Math.floor(elapsed / 30) / steps));
+    shellTarget = mix(P.colorStart, P.colorEnd, Math.min(1, Math.floor(elapsed / 30) / steps));
     // A soft flash on each 30-second beep, a clear pulse every second at the end
     const f = sec - remaining; // 0 right after a tick
     if (remaining <= 10) glow = 0.55 * Math.exp(-f * 5);
@@ -206,13 +210,13 @@ world.start((dt, now) => {
     if (remaining <= 0) finish();
   } else if (done) {
     text = '0:00';
-    shellTarget = SHELL_END;
+    shellTarget = P.colorEnd;
     glow = 0.35 + 0.25 * Math.sin(now * 0.01);
     if (now - lastAlarm > 1200) {
       lastAlarm = now;
       sound.alarm();
       haptic.alarm();
-      world.jump(0.8);
+      world.jump(P.alarmJump);
     }
     if (now - alarmStart > 90000) reset();
   } else {
@@ -231,10 +235,9 @@ world.start((dt, now) => {
     lastPaint = now;
     world.paint(text, {
       shell: shellHex,
-      dot: mix(shellHex, '#14303B', 0.13),
-      band: done ? theme.alert : theme.yolk,
-      ink: done ? '#FFFFFF' : theme.yolkInk
-    });
+      dot: mix(shellHex, '#14303B', P.dotStrength),
+      digit: done ? mix(shellHex, '#FFFFFF', 0.5) : mix(shellHex, '#14303B', P.digitContrast)
+    }, P);
   }
   if (text !== lastText) {
     lastText = text;
