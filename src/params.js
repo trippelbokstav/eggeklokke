@@ -33,7 +33,7 @@ export const DEFAULT_PARAMS = {
 
   // Gyro (tilting the phone)
   tilt: 0.66,             // how much of gravity tilting can turn sideways (strength at full tilt)
-  gyroRange: 25,          // degrees of tilt for full strength (low = sensitive)
+  gyroRange: 20,          // degrees of tilt for full strength (low = sensitive)
   gyroDead: 1.5,          // degrees around "flat" that are ignored (calm hands)
   gyroSmooth: 0.1,        // seconds: how softly the egg follows the tilt (low = quick)
 
@@ -61,7 +61,7 @@ export const DEFAULT_PARAMS = {
   alarmJump: 0.8
 };
 
-const STORE_KEY = 'eggeklokke-lab-v5'; // bump when defaults change, so old lab values don't override them
+const STORE_KEY = 'eggeklokke-lab-v6'; // bump when defaults change, so old lab values don't override them
 
 export function loadParams(useStored) {
   const params = { ...DEFAULT_PARAMS };

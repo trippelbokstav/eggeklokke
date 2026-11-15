@@ -109,6 +109,7 @@ function start() {
   sound.beep();
   haptic.press();
   input.touch();
+  input.recalibrate(); // "flat" = how you hold the phone when you press Start
   if (world) world.setPosed(false);
   if (game && P.gameOn) game.start();
   scoreEl.className = 'score';
@@ -238,7 +239,8 @@ async function toggleLab() {
       testMedium() { haptic.test('medium'); },
       testHeavy() { haptic.test('heavy'); },
       testPickup() { haptic.pickup(); },
-      askGyro() { input.requestPermission().then(updateTip); }
+      askGyro() { input.requestPermission().then(updateTip); },
+      calibrate() { input.recalibrate(); haptic.press(); }
     });
     lab.open();
     return;

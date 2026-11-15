@@ -46,6 +46,11 @@ export function createLab(P, world, diag) {
   gyro.add(P, 'gyroDead', 0, 10, 0.1).name('dødsone (°)').onChange(repaint);
   gyro.add(P, 'gyroSmooth', 0.01, 1, 0.01).name('glatting (s)').onChange(repaint);
   gyro.add(P, 'tilt', 0.1, 1.5, 0.01).name('vippe-styrke').onChange(changed);
+  if (diag) {
+    gyro.add(diag.gyro, 'tiltX').name('vipp nå: sideveis').disable().listen();
+    gyro.add(diag.gyro, 'tiltZ').name('vipp nå: fram/bak').disable().listen();
+    gyro.add(diag, 'calibrate').name('🎯 Kalibrer: «flatt» = slik du holder nå');
+  }
 
   const phys = gui.addFolder('Fysikk');
   phys.add(P, 'gravity', 4, 40, 0.5).name('tyngdekraft').onChange(changed);
