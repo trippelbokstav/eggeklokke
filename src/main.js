@@ -48,7 +48,7 @@ let lastAlarm = 0;
 let wake = null;
 let centerMode = false;
 const tiltNow = { x: 0, z: 0 };
-let shellNow = hexToRgb(P.colorStart); // float rgb, eased every frame
+let shellNow = null; // float rgb, eased every frame (set on the first frame)
 let theme = {};
 let lastPaint = 0;
 let lastText = '';
@@ -66,9 +66,8 @@ function unlock() {
 document.addEventListener('pointerdown', unlock, { capture: true });
 
 function updateTip() {
-  tipEl.textContent = input.gyroActive
-    ? 'Vipp telefonen for å rulle egget.'
-    : 'Dra på skjermen for å rulle egget.';
+  if (!running && !done) tipEl.textContent = 'Trykk Start, så våkner egget.';
+  else tipEl.textContent = input.gyroActive ? 'Vipp telefonen for å rulle egget.' : 'Dra på skjermen for å rulle egget.';
 }
 
 function refreshIdle() {
@@ -94,6 +93,8 @@ function start() {
   sound.beep();
   haptic.press();
   input.touch();
+  if (world) world.setPosed(false);
+  updateTip();
   try {
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { wake = w; }).catch(() => {});
   } catch (e) { /* ignore */ }
@@ -123,6 +124,8 @@ function reset() {
   goBtn.classList.remove('alarm');
   resetBtn.hidden = true;
   subEl.textContent = 'Start klokka når egget går ned i kokende vann.';
+  if (world) world.setPosed(true);
+  updateTip();
   refreshIdle();
 }
 
@@ -138,14 +141,15 @@ refreshIdle();
 updateTip();
 
 // ---------- 3D ----------
-const world = await createWorld(stage, P);
+let world = null;
+world = await createWorld(stage, P);
 stage.classList.add('ready');
 // Debugging in the console: __egg.skip(330) jumps 330 seconds ahead
 window.__egg = { ...world.debug, world, P, skip(s) { if (running) endAt -= s * 1000; } };
 
 function applyTheme() {
-  theme = { alert: cssVar('--alert') || '#C2410C' };
-  world.setLineColor(cssVar('--ink'));
+  theme = { alert: cssVar('--alert') || '#C2410C', bg: cssVar('--bg') || '#E3ECEF' };
+  world.setShadowColor(cssVar('--ink'));
 }
 applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
@@ -174,7 +178,7 @@ if (fpsEl) {
 
 world.start((dt, now) => {
   // ---- Tilt, or roll back to the middle when nobody plays ----
-  const idle = input.idleFor() > P.idleSec * 1000;
+  const idle = running && input.idleFor() > P.idleSec * 1000;
   if (idle && !centerMode) { centerMode = true; input.recalibrate(); }
   if (!idle && centerMode) centerMode = false;
   const want = centerMode ? { x: 0, z: 0 } : input.tilt();
@@ -187,7 +191,8 @@ world.start((dt, now) => {
   // ---- Time ----
   let text;
   let glow = 0;
-  let shellTarget = P.colorStart;
+  const shellStart = P.matchBackground ? theme.bg : P.colorStart;
+  let shellTarget = shellStart;
   if (running) {
     const remaining = (endAt - Date.now()) / 1000;
     const sec = Math.ceil(remaining);
@@ -202,7 +207,7 @@ world.start((dt, now) => {
     // The shell warms up one small step every 30 seconds
     const elapsed = total - Math.max(0, remaining);
     const steps = Math.max(1, Math.floor(total / 30));
-    shellTarget = mix(P.colorStart, P.colorEnd, Math.min(1, Math.floor(elapsed / 30) / steps));
+    shellTarget = mix(shellStart, P.colorEnd, Math.min(1, Math.floor(elapsed / 30) / steps));
     // A soft flash on each 30-second beep, a clear pulse every second at the end
     const f = sec - remaining; // 0 right after a tick
     if (remaining <= 10) glow = 0.55 * Math.exp(-f * 5);
@@ -225,6 +230,7 @@ world.start((dt, now) => {
 
   // Ease the shell color towards its target
   const target = hexToRgb(shellTarget);
+  if (!shellNow) shellNow = target.slice();
   const e = 1 - Math.exp(-dt * 3);
   shellNow = shellNow.map((v, i) => v + (target[i] - v) * e);
   const shellHex = rgbToHex(shellNow);
@@ -235,8 +241,8 @@ world.start((dt, now) => {
     lastPaint = now;
     world.paint(text, {
       shell: shellHex,
-      dot: mix(shellHex, '#14303B', P.dotStrength),
-      digit: done ? mix(shellHex, '#FFFFFF', 0.5) : mix(shellHex, '#14303B', P.digitContrast)
+      dot: mix(shellHex, P.lineColor, P.dotStrength),
+      digit: P.digitColor
     }, P);
   }
   if (text !== lastText) {

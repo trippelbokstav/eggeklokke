@@ -11,6 +11,7 @@ The first, simple SVG version is kept on the branch `v1-svg`.
 
 - **three.js** draws the egg from straight above (flat toon shading, outline, silhouette drop shadow, faint dots, a slightly rough bump map).
 - **Rapier** (`@dimforge/rapier3d-compat`) simulates the egg as a convex hull, so it wobbles and rolls in curves like a real egg.
+- **Zero position:** while you set the timer, the egg lies straight (pointy end up, clock facing you). Start wakes it up; stop glides it back.
 - **Tilt** (gyro, or drag) turns gravity sideways. After 10 s without play, the egg rolls back to the middle.
 - **The clock** is painted on a canvas texture in low contrast, repeated around the egg.
 - **Color:** the shell warms up a little every 30 s, pulses every second in the last 10 s, and turns red at the alarm.

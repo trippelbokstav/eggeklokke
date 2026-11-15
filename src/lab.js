@@ -12,18 +12,21 @@ export function createLab(P, world) {
   const repaint = () => saveParams(P); // the shell repaints by itself when values change
 
   const shape = gui.addFolder('Eggform');
-  shape.add(P, 'eggLength', 1, 3, 0.05).name('lengde').onChange(reshaped);
-  shape.add(P, 'eggWidth', 0.6, 2.4, 0.05).name('bredde').onChange(reshaped);
+  shape.add(P, 'eggLength', 1, 4.5, 0.05).name('lengde').onChange(reshaped);
+  shape.add(P, 'eggWidth', 0.6, 3.5, 0.05).name('bredde').onChange(reshaped);
   shape.add(P, 'eggPointy', 0, 0.3, 0.01).name('spiss ende').onChange(reshaped);
 
   const look = gui.addFolder('Utseende');
+  look.add(P, 'matchBackground').name('egg = bakgrunn').onChange(repaint);
   look.addColor(P, 'colorStart').name('farge start').onChange(repaint);
   look.addColor(P, 'colorEnd').name('farge ferdig').onChange(repaint);
+  look.addColor(P, 'lineColor').name('kant og prikker').onChange(changed);
+  look.addColor(P, 'digitColor').name('klokke-farge').onChange(repaint);
   look.add(P, 'dotCount', 0, 600, 10).name('prikker antall').onChange(repaint);
   look.add(P, 'dotSize', 2, 30, 1).name('prikker størrelse').onChange(repaint);
-  look.add(P, 'dotStrength', 0, 0.5, 0.01).name('prikker styrke').onChange(repaint);
+  look.add(P, 'dotStrength', 0, 1, 0.01).name('prikker styrke').onChange(repaint);
   look.add(P, 'rough', 0, 3, 0.05).name('ru overflate').onChange(changed);
-  look.add(P, 'digitContrast', 0, 1, 0.01).name('tall kontrast').onChange(repaint);
+  look.add(P, 'shade', 0, 0.6, 0.01).name('skyggeside').onChange(changed);
   look.add(P, 'digitSize', 40, 200, 2).name('tall størrelse').onChange(repaint);
   look.add(P, 'digitRepeat', 1, 5, 1).name('tall rundt egget').onChange(repaint);
   look.add(P, 'outline', 0, 0.1, 0.005).name('omriss').onChange(changed);

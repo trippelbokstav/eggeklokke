@@ -20,9 +20,9 @@ function eggProfile(L, W, pointy, n) {
   return pts;
 }
 
-// Two-tone gradient = flat, graphic shading
+// Two-tone gradient = flat, graphic shading. The light intensities decide how dark the shadow side is.
 function toonGradient() {
-  const data = new Uint8Array([170, 170, 170, 255, 255, 255, 255, 255]);
+  const data = new Uint8Array([0, 0, 0, 255, 255, 255, 255, 255]);
   const tex = new THREE.DataTexture(data, 2, 1, THREE.RGBAFormat);
   tex.minFilter = THREE.NearestFilter;
   tex.magFilter = THREE.NearestFilter;
@@ -44,8 +44,10 @@ export async function createWorld(container, P) {
   const camera = new THREE.PerspectiveCamera(P.fov, 1, 1, 500);
   camera.up.set(0, 0, -1); // screen up = world -Z
 
-  scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+  // ambient + sun = PI, so the lit side shows the shell color exactly (three.js divides diffuse by PI)
+  const ambient = new THREE.AmbientLight(0xffffff, Math.PI);
+  scene.add(ambient);
+  const sun = new THREE.DirectionalLight(0xffffff, 0);
   sun.position.set(-4, 10, -4); // from the top left of the screen
   scene.add(sun);
 
@@ -98,13 +100,20 @@ export async function createWorld(container, P) {
     set(walls[3], 0, hz + WALL, hx + 2 * WALL, WALL);  // bottom of the screen
   }
 
-  const startRot = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.2, 0.4, Math.PI / 2));
+  // "Zero position" while you set the timer: lying straight, pointy end up the screen, clock facing the camera.
+  // The clock is painted at u = 0.5 (local -Z); turn it to face up (+Y), and the pointy end (+Y) to screen up (-Z).
+  const poseRot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2)
+    .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI));
+  const posePos = new THREE.Vector3(0, P.eggWidth / 2, 0);
   const eggBody = world.createRigidBody(
-    RAPIER.RigidBodyDesc.dynamic()
-      .setTranslation(0, 2, 0)
-      .setRotation({ x: startRot.x, y: startRot.y, z: startRot.z, w: startRot.w })
+    RAPIER.RigidBodyDesc.kinematicPositionBased()
+      .setTranslation(posePos.x, posePos.y, posePos.z)
+      .setRotation({ x: poseRot.x, y: poseRot.y, z: poseRot.z, w: poseRot.w })
       .setCanSleep(false)
   );
+  let posed = true;
+  const tmpPos = new THREE.Vector3();
+  const tmpRot = new THREE.Quaternion();
   let eggCollider = null;
   let mass = 1;
 
@@ -152,6 +161,10 @@ export async function createWorld(container, P) {
     eggBody.setLinearDamping(P.linDamp);
     eggBody.setAngularDamping(centerPull ? Math.max(1.6, P.angDamp) : P.angDamp);
     eggMat.bumpScale = P.rough * 2;
+    ambient.intensity = Math.PI * (1 - P.shade);
+    sun.intensity = Math.PI * P.shade;
+    outline.material.color.set(P.lineColor);
+    posePos.y = P.eggWidth / 2;
     outline.visible = P.outline > 0;
     outline.scale.setScalar(1 + P.outline);
     shadow.visible = P.shadowOpacity > 0;
@@ -160,6 +173,19 @@ export async function createWorld(container, P) {
   }
 
   function step() {
+    if (posed) {
+      // Glide to the zero position and stay there
+      const t = eggBody.translation();
+      const r = eggBody.rotation();
+      const e = 1 - Math.exp(-STEP * 9);
+      tmpPos.set(t.x, t.y, t.z).lerp(posePos, e);
+      tmpRot.set(r.x, r.y, r.z, r.w).slerp(poseRot, e);
+      eggBody.setNextKinematicTranslation({ x: tmpPos.x, y: tmpPos.y, z: tmpPos.z });
+      eggBody.setNextKinematicRotation({ x: tmpRot.x, y: tmpRot.y, z: tmpRot.z, w: tmpRot.w });
+      world.step();
+      prevVel.set(0, 0, 0);
+      return;
+    }
     const g = P.gravity;
     world.gravity = { x: tilt.x * g * P.tilt, y: -g, z: tilt.z * g * P.tilt };
 
@@ -286,9 +312,19 @@ export async function createWorld(container, P) {
       eggBody.setAngularDamping(on ? Math.max(1.6, P.angDamp) : P.angDamp);
     },
     setGlow(color, amount) { eggMat.emissive.set(color).multiplyScalar(amount); },
-    setLineColor(color) {
-      outline.material.color.set(color);
-      shadowMat.color.set(color);
+    setShadowColor(color) { shadowMat.color.set(color); },
+    // true: glide to the zero position (setting the timer). false: let it roll.
+    setPosed(on) {
+      if (on === posed) return;
+      posed = on;
+      if (on) {
+        eggBody.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
+      } else {
+        eggBody.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
+        eggBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        eggBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+        mass = eggBody.mass();
+      }
     },
     applyParams,
     buildEgg,

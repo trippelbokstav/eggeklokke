@@ -2,22 +2,25 @@
 // To make lab values the new default: paste the copied JSON here.
 export const DEFAULT_PARAMS = {
   // Egg shape (scene units)
-  eggLength: 1.9,
-  eggWidth: 1.45,
+  eggLength: 2.85,
+  eggWidth: 2.18,
   eggPointy: 0.11,        // how much fatter the blunt end is
 
   // Look
-  colorStart: '#F0AE0B',  // fresh egg
-  colorEnd: '#E8822A',    // done egg (the shell shifts a little every 30 s)
+  matchBackground: true,  // fresh egg = the page background color (colorStart is used if off)
+  colorStart: '#E3ECEF',  // fresh egg
+  colorEnd: '#F2E3BE',    // done egg (the shell shifts a little every 30 s)
+  lineColor: '#A9C8DA',   // outline and dots
   dotCount: 160,
   dotSize: 9,             // pixels on the 1024 x 512 shell texture
-  dotStrength: 0.07,      // 0 = invisible, 1 = full contrast
+  dotStrength: 0.45,      // 0 = invisible, 1 = full line color
   rough: 0.5,             // bumpy surface
-  digitContrast: 0.22,
-  digitSize: 120,
-  digitRepeat: 3,         // how many times the time is painted around the egg
-  outline: 0.03,          // 0 = no outline
-  shadowOpacity: 0.12,
+  shade: 0.15,            // how dark the shadow side of the egg is (0 = completely flat)
+  digitColor: '#F0AE0B',
+  digitSize: 115,
+  digitRepeat: 1,         // how many times the time is painted around the egg
+  outline: 0.02,          // 0 = no outline
+  shadowOpacity: 0.08,
   shadowOffset: 0.14,
 
   // Camera (straight down)
@@ -38,7 +41,7 @@ export const DEFAULT_PARAMS = {
   alarmJump: 0.8
 };
 
-const STORE_KEY = 'eggeklokke-lab-v1';
+const STORE_KEY = 'eggeklokke-lab-v2'; // bump when defaults change, so old lab values don't override them
 
 export function loadParams(useStored) {
   const params = { ...DEFAULT_PARAMS };
