@@ -36,7 +36,7 @@ export function createInput(stage, P) {
   let anchor = null;        // angles at the last real movement (for "is anyone playing?")
   // After the egg went home: ignore the gyro until the phone has moved and is held still again,
   // then make that the new "flat". (So picking the phone up from the table doesn't fling the egg.)
-  const settle = { on: false, moved: false, lastMove: 0 };
+  const settle = { on: false, moved: false, firstMove: 0 };
   let gyroActive = false;
   let lastInteract = performance.now();
 
@@ -75,13 +75,14 @@ export function createInput(stage, P) {
     if (moved) {
       anchor = up;
       touch();
-      settle.lastMove = now;
-      settle.moved = true;
+      if (settle.on && !settle.moved) { settle.moved = true; settle.firstMove = now; }
     }
     if (settle.on) {
+      // Give the pick-up 0.7 s, then take the angle you hold as the new "flat". (Waiting for the hand
+      // to be completely still never happened: a hand always moves a little, so the game froze.)
       gyro.x = 0;
       gyro.z = 0;
-      if (settle.moved && now - settle.lastMove > 500) { base = up; settle.on = false; }
+      if (settle.moved && now - settle.firstMove > 700) { base = up; anchor = up; settle.on = false; }
       diag.tiltX = 'venter';
       diag.tiltZ = 'venter';
       return;
