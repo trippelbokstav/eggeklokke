@@ -48,13 +48,15 @@ export const DEFAULT_PARAMS = {
   gameOn: true,
   miniScale: 0.3,         // size of the small eggs compared with the big one
   pickup: 0.45,           // how close the big egg's middle must come (0 = dead center, 1 = edge touch)
-  comboSec: 4,            // seconds to reach the next egg to keep the streak (rekke)
+  comboSec: 4,            // seconds per small egg to keep the streak (its countdown: yellow -> orange -> red)
+  miniOrange: '#F07C1E',  // middle color of the countdown (start = digitColor, end = outlineEnd, expired = lineColor)
+  ticks: true,            // tick sound during the countdown (and small vibrations in red)
   markerSize: 0.09,       // size of the dots that show where the next eggs come
 
   // Behaviour
   idleSec: 10,            // glide home to the zero position after this many seconds without play
   homeSpeed: 1.8,         // how fast it glides home (higher = faster)
-  wallOut: 0.65,          // how far outside the screen the walls are, in egg widths (0 = at the edge)
+  wallOut: 0.77,          // how far outside the screen the walls are, in egg widths (0 = at the edge)
   alarmJump: 0.8
 };
 

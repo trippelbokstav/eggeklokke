@@ -77,7 +77,7 @@ export async function createWorld(container, P, focus = container) {
   // ---------- Game layer: small eggs to collect, and dots that show where the next ones come ----------
   // Two small eggs take turns: one pops while the next one appears.
   const minis = [0, 1].map(() => {
-    const tex = createEggTexture();
+    const tex = createEggTexture(256, 128);
     const m = new THREE.Mesh(egg.geometry, new THREE.MeshToonMaterial({ map: tex.texture, gradientMap }));
     m.visible = false;
     m.userData = { tex, mode: 'off', t: 0, x: 0, z: 0 }; // mode: in | idle | pop | off
@@ -410,10 +410,15 @@ export async function createWorld(container, P, focus = container) {
       showTarget(x, z, n, colors) {
         miniIdx = 1 - miniIdx;
         const m = minis[miniIdx];
-        m.userData.tex.paint(String(n), { shell: colors.shell, dot: colors.shell, digit: colors.digit },
-          { dotCount: 0, dotSize: 1, digitSize: 300, digitRepeat: 1 });
-        Object.assign(m.userData, { mode: 'in', t: 0, x, z });
+        Object.assign(m.userData, { mode: 'in', t: 0, x, z, n });
+        this.tintTarget(colors);
         m.visible = true;
+      },
+      // Recolor the current small egg (its countdown: yellow -> orange -> red -> light blue)
+      tintTarget(colors) {
+        const m = minis[miniIdx];
+        m.userData.tex.paint(String(m.userData.n), { shell: colors.shell, dot: colors.shell, digit: colors.digit },
+          { dotCount: 0, dotSize: 1, digitSize: 300, digitRepeat: 1 });
       },
       // The current small egg pops
       popTarget() {

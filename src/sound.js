@@ -29,6 +29,8 @@ function tone(freq, dur, vol, when = 0, type = 'sine') {
 export const sound = {
   beep() { tone(880, 0.09, 0.15); },
   alarm() { for (let i = 0; i < 4; i++) tone(1320, 0.12, 0.35, i * 0.18); },
+  // Countdown tick on a small egg. urgency 0..1 makes it brighter.
+  tick(urgency) { tone(1400 + urgency * 600, 0.025, 0.05 + urgency * 0.06, 0, 'square'); },
   // A small egg is collected. The tone rises with the streak.
   pickup(streak) {
     const f = 660 * Math.pow(2, Math.min(streak - 1, 12) / 12);

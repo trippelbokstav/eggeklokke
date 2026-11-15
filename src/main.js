@@ -181,7 +181,11 @@ world = await createWorld($('scene'), P, stage);
 
 // The little game: collect small eggs while the big one boils
 game = createGame(world, P, {
-  colors: () => ({ shell: P.digitColor, digit: theme.bg }),
+  digitColor: () => theme.bg,
+  onTick(urgency, red) {
+    sound.tick(urgency);
+    if (red) haptic.tick();
+  },
   onPickup(e) {
     haptic.pickup();
     sound.pickup(e.combo);

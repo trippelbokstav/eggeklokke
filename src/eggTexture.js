@@ -3,8 +3,6 @@
 // A second canvas holds fine noise, used as a bump map for a slightly rough shell.
 import * as THREE from 'three';
 
-const W = 1024;
-const H = 512;
 const FONT = '"Nunito", "Avenir Next", system-ui, sans-serif';
 
 // Small seeded random, so the dots stay in the same place every repaint
@@ -41,7 +39,9 @@ function makeBump() {
   return tex;
 }
 
-export function createEggTexture() {
+// w, h: canvas size. The small eggs use a smaller canvas, so recoloring them every frame stays cheap.
+export function createEggTexture(W = 1024, H = 512) {
+  const k = H / 512; // sizes in opts are given for a 512 px high canvas
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
@@ -68,7 +68,7 @@ export function createEggTexture() {
     for (let i = 0; i < opts.dotCount; i++) {
       const x = r() * W;
       const y = H * (0.1 + r() * 0.8);
-      const size = opts.dotSize * (0.6 + r() * 0.8);
+      const size = opts.dotSize * k * (0.6 + r() * 0.8);
       ctx.beginPath();
       ctx.arc(x, y, size, 0, Math.PI * 2);
       ctx.fill();
@@ -78,7 +78,7 @@ export function createEggTexture() {
     // The time, repeated around the egg's waist
     const repeat = Math.max(1, Math.round(opts.digitRepeat));
     const cell = W / repeat;
-    let size = opts.digitSize;
+    let size = opts.digitSize * k;
     ctx.font = `800 ${size}px ${FONT}`;
     const width = ctx.measureText(timeText).width;
     if (width > cell * 0.85) {

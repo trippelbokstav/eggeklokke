@@ -58,7 +58,9 @@ export function createLab(P, world, diag) {
   game.add(P, 'gameOn').name('spill på').onChange(repaint);
   game.add(P, 'miniScale', 0.1, 0.6, 0.01).name('småegg størrelse').onChange(repaint);
   game.add(P, 'pickup', 0.05, 1, 0.01).name('treff-radius').onChange(repaint);
-  game.add(P, 'comboSec', 1, 10, 0.5).name('rekke-tid (s)').onChange(repaint);
+  game.add(P, 'comboSec', 1, 10, 0.5).name('bonus-tid per egg (s)').onChange(repaint);
+  game.addColor(P, 'miniOrange').name('nedtelling midt').onChange(repaint);
+  game.add(P, 'ticks').name('tikking').onChange(repaint);
   game.add(P, 'markerSize', 0.03, 0.3, 0.01).name('prikk størrelse').onChange(repaint);
 
   const beh = gui.addFolder('Oppførsel');
