@@ -19,17 +19,20 @@ export function createLab(P, world) {
   const look = gui.addFolder('Utseende');
   look.add(P, 'matchBackground').name('egg = bakgrunn').onChange(repaint);
   look.addColor(P, 'colorStart').name('farge start').onChange(repaint);
-  look.addColor(P, 'colorEnd').name('farge ferdig').onChange(repaint);
-  look.addColor(P, 'lineColor').name('kant og prikker').onChange(changed);
+  look.addColor(P, 'lineColor').name('kant (innstilling) og prikker').onChange(repaint);
+  look.addColor(P, 'outlineStart').name('kant start').onChange(repaint);
+  look.addColor(P, 'outlineMid').name('kant midt').onChange(repaint);
+  look.addColor(P, 'outlineEnd').name('kant slutt').onChange(repaint);
+  look.add(P, 'pulse', 0, 4, 0.1).name('kant-puls').onChange(repaint);
   look.addColor(P, 'digitColor').name('klokke-farge').onChange(repaint);
   look.add(P, 'dotCount', 0, 600, 10).name('prikker antall').onChange(repaint);
-  look.add(P, 'dotSize', 2, 30, 1).name('prikker størrelse').onChange(repaint);
+  look.add(P, 'dotSize', 0.3, 30, 0.1).name('prikker størrelse').onChange(repaint);
   look.add(P, 'dotStrength', 0, 1, 0.01).name('prikker styrke').onChange(repaint);
   look.add(P, 'rough', 0, 3, 0.05).name('ru overflate').onChange(changed);
   look.add(P, 'shade', 0, 0.6, 0.01).name('skyggeside').onChange(changed);
   look.add(P, 'digitSize', 40, 200, 2).name('tall størrelse').onChange(repaint);
   look.add(P, 'digitRepeat', 1, 5, 1).name('tall rundt egget').onChange(repaint);
-  look.add(P, 'outline', 0, 0.1, 0.005).name('omriss').onChange(changed);
+  look.add(P, 'outline', 0, 0.12, 0.005).name('omriss').onChange(changed);
   look.add(P, 'shadowOpacity', 0, 0.5, 0.01).name('skygge styrke').onChange(changed);
   look.add(P, 'shadowOffset', 0, 0.6, 0.01).name('skygge forskyvning').onChange(changed);
 

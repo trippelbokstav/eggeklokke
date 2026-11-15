@@ -112,6 +112,7 @@ export async function createWorld(container, P) {
       .setCanSleep(false)
   );
   let posed = true;
+  let outlinePulse = 0;
   const tmpPos = new THREE.Vector3();
   const tmpRot = new THREE.Quaternion();
   let eggCollider = null;
@@ -163,10 +164,9 @@ export async function createWorld(container, P) {
     eggMat.bumpScale = P.rough * 2;
     ambient.intensity = Math.PI * (1 - P.shade);
     sun.intensity = Math.PI * P.shade;
-    outline.material.color.set(P.lineColor);
     posePos.y = P.eggWidth / 2;
     outline.visible = P.outline > 0;
-    outline.scale.setScalar(1 + P.outline);
+    outline.scale.setScalar(1 + P.outline * (1 + outlinePulse));
     shadow.visible = P.shadowOpacity > 0;
     camera.fov = P.fov;
     resize();
@@ -313,6 +313,12 @@ export async function createWorld(container, P) {
     },
     setGlow(color, amount) { eggMat.emissive.set(color).multiplyScalar(amount); },
     setShadowColor(color) { shadowMat.color.set(color); },
+    // Outline color and a swell (0 = normal width)
+    setOutline(color, pulse = 0) {
+      outline.material.color.set(color);
+      outlinePulse = pulse;
+      outline.scale.setScalar(1 + P.outline * (1 + pulse));
+    },
     // true: glide to the zero position (setting the timer). false: let it roll.
     setPosed(on) {
       if (on === posed) return;

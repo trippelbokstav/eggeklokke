@@ -34,6 +34,9 @@ const mix = (a, b, t) => {
 };
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
+// Outline color along the boil: 0 = white, 0.5 = yellow, 1 = red
+const edgeColor = (p) => (p < 0.5 ? mix(P.outlineStart, P.outlineMid, p * 2) : mix(P.outlineMid, P.outlineEnd, (p - 0.5) * 2));
+
 const val = (name) => document.querySelector(`input[name="${name}"]:checked`).value;
 const currentTotal = () => totalSeconds(val('d'), val('s'), +altEl.value);
 
@@ -48,7 +51,7 @@ let lastAlarm = 0;
 let wake = null;
 let centerMode = false;
 const tiltNow = { x: 0, z: 0 };
-let shellNow = null; // float rgb, eased every frame (set on the first frame)
+let edgeNow = null; // outline color as float rgb, eased every frame
 let theme = {};
 let lastPaint = 0;
 let lastText = '';
@@ -190,9 +193,8 @@ world.start((dt, now) => {
 
   // ---- Time ----
   let text;
-  let glow = 0;
-  const shellStart = P.matchBackground ? theme.bg : P.colorStart;
-  let shellTarget = shellStart;
+  let pulse = 0;
+  let edgeTarget = P.lineColor; // outline color: light blue while setting the timer
   if (running) {
     const remaining = (endAt - Date.now()) / 1000;
     const sec = Math.ceil(remaining);
@@ -204,19 +206,19 @@ world.start((dt, now) => {
         if (sec <= 10) { sound.beep(); haptic.tick(); } else if (sec % 30 === 0) sound.beep();
       }
     }
-    // The shell warms up one small step every 30 seconds
+    // The outline steps every 30 seconds: white -> yellow -> red
     const elapsed = total - Math.max(0, remaining);
     const steps = Math.max(1, Math.floor(total / 30));
-    shellTarget = mix(shellStart, P.colorEnd, Math.min(1, Math.floor(elapsed / 30) / steps));
-    // A soft flash on each 30-second beep, a clear pulse every second at the end
+    edgeTarget = edgeColor(Math.min(1, Math.floor(elapsed / 30) / steps));
+    // The outline swells a little on each 30-second beep, and every second at the end
     const f = sec - remaining; // 0 right after a tick
-    if (remaining <= 10) glow = 0.55 * Math.exp(-f * 5);
-    else if (sec % 30 === 0) glow = 0.22 * Math.exp(-f * 4);
+    if (remaining <= 10) pulse = P.pulse * Math.exp(-f * 5);
+    else if (sec % 30 === 0) pulse = P.pulse * 0.4 * Math.exp(-f * 4);
     if (remaining <= 0) finish();
   } else if (done) {
     text = '0:00';
-    shellTarget = P.colorEnd;
-    glow = 0.35 + 0.25 * Math.sin(now * 0.01);
+    edgeTarget = P.outlineEnd;
+    pulse = P.pulse * (0.6 + 0.4 * Math.sin(now * 0.01));
     if (now - lastAlarm > 1200) {
       lastAlarm = now;
       sound.alarm();
@@ -228,15 +230,15 @@ world.start((dt, now) => {
     text = fmt(currentTotal());
   }
 
-  // Ease the shell color towards its target
-  const target = hexToRgb(shellTarget);
-  if (!shellNow) shellNow = target.slice();
-  const e = 1 - Math.exp(-dt * 3);
-  shellNow = shellNow.map((v, i) => v + (target[i] - v) * e);
-  const shellHex = rgbToHex(shellNow);
-  world.setGlow(theme.alert, glow);
+  // Ease the outline color to its new step (a soft change, not a jump)
+  const target = hexToRgb(edgeTarget);
+  if (!edgeNow) edgeNow = target.slice();
+  const e = 1 - Math.exp(-dt * 4);
+  edgeNow = edgeNow.map((v, i) => v + (target[i] - v) * e);
+  world.setOutline(rgbToHex(edgeNow), pulse);
 
-  // Repaint the shell at most 10 times a second
+  // The egg itself keeps its color. Repaint the shell when the time or the look changes.
+  const shellHex = P.matchBackground ? theme.bg : P.colorStart;
   if (text !== lastText || now - lastPaint > 100) {
     lastPaint = now;
     world.paint(text, {

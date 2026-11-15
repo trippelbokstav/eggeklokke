@@ -8,18 +8,22 @@ export const DEFAULT_PARAMS = {
 
   // Look
   matchBackground: true,  // fresh egg = the page background color (colorStart is used if off)
-  colorStart: '#E3ECEF',  // fresh egg
-  colorEnd: '#F2E3BE',    // done egg (the shell shifts a little every 30 s)
-  lineColor: '#A9C8DA',   // outline and dots
-  dotCount: 160,
-  dotSize: 9,             // pixels on the 1024 x 512 shell texture
-  dotStrength: 0.45,      // 0 = invisible, 1 = full line color
+  colorStart: '#E3ECEF',  // egg color (when matchBackground is off). The egg itself never changes color.
+  lineColor: '#A9C8DA',   // outline while setting the timer, and the dots
+  // While boiling, the outline steps every 30 s: white -> yellow -> red
+  outlineStart: '#FFFFFF',
+  outlineMid: '#F0AE0B',
+  outlineEnd: '#D9372B',
+  pulse: 1.2,             // how much the outline swells on the beeps at the end
+  dotCount: 400,
+  dotSize: 1.4,           // pixels on the 1024 x 512 shell texture
+  dotStrength: 0.2,       // 0 = invisible, 1 = full line color
   rough: 0.5,             // bumpy surface
   shade: 0.15,            // how dark the shadow side of the egg is (0 = completely flat)
   digitColor: '#F0AE0B',
   digitSize: 115,
   digitRepeat: 1,         // how many times the time is painted around the egg
-  outline: 0.02,          // 0 = no outline
+  outline: 0.03,          // 0 = no outline
   shadowOpacity: 0.08,
   shadowOffset: 0.14,
 
@@ -41,7 +45,7 @@ export const DEFAULT_PARAMS = {
   alarmJump: 0.8
 };
 
-const STORE_KEY = 'eggeklokke-lab-v2'; // bump when defaults change, so old lab values don't override them
+const STORE_KEY = 'eggeklokke-lab-v3'; // bump when defaults change, so old lab values don't override them
 
 export function loadParams(useStored) {
   const params = { ...DEFAULT_PARAMS };

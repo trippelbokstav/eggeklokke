@@ -14,7 +14,7 @@ The first, simple SVG version is kept on the branch `v1-svg`.
 - **Zero position:** while you set the timer, the egg lies straight (pointy end up, clock facing you). Start wakes it up; stop glides it back.
 - **Tilt** (gyro, or drag) turns gravity sideways. After 10 s without play, the egg rolls back to the middle.
 - **The clock** is painted on a canvas texture in low contrast, repeated around the egg.
-- **Color:** the shell warms up a little every 30 s, pulses every second in the last 10 s, and turns red at the alarm.
+- **Color:** the egg keeps the background color. The outline steps every 30 s from white via yellow to red, and swells on the beeps in the last 10 s.
 - **Haptics** (`@capacitor/haptics`): clicks on buttons, ticks at the end, bumps when the egg hits the dish. Only in the iOS app.
 
 | File | What |
