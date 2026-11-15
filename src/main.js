@@ -59,15 +59,25 @@ let lastText = '';
 
 const input = createInput(stage);
 
-// The first tap anywhere unlocks sound and asks for gyro access (iOS rules)
+// The first tap unlocks sound. Gyro access must be asked from a real "click" (iOS ignores
+// pointerdown for this), so ask on clicks until it is granted (Start is a click too).
 let unlocked = false;
 function unlock() {
-  if (unlocked) return;
-  unlocked = true;
-  unlockAudio();
+  if (!unlocked) {
+    unlocked = true;
+    unlockAudio();
+  }
+  askGyro();
+}
+let gyroAsked = false;
+function askGyro() {
+  const state = input.diag.permission;
+  if (gyroAsked && state !== 'denied' && !String(state).startsWith('feil')) return;
+  gyroAsked = true;
   input.requestPermission().then(updateTip);
 }
-document.addEventListener('pointerdown', unlock, { capture: true });
+document.addEventListener('pointerdown', () => { if (!unlocked) { unlocked = true; unlockAudio(); } }, { capture: true });
+document.addEventListener('click', askGyro, { capture: true });
 
 function updateTip() {
   if (!running && !done) tipEl.textContent = 'Trykk Start, så våkner egget.';
