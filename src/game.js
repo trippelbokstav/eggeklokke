@@ -15,6 +15,8 @@ export function createGame(world, P, hooks) {
   let bonus = 0;
   let combo = 0;
   let lastPick = -1e9;
+  let penalties = 0;
+  let lastPenalty = -1e9;
   let target = null;   // { x, z, n, at }
   let plan = [];       // upcoming spots; the dots show the first two
   let nextTick = 0;
@@ -32,11 +34,14 @@ export function createGame(world, P, hooks) {
   // The play area in floor coordinates, kept so the whole small egg is in view
   function area() {
     const a = world.game.freeArea();
-    const m = P.eggLength * P.miniScale * 0.6 + 0.15;
-    return {
-      x0: Math.min(a.x0, a.x1) + m, x1: Math.max(a.x0, a.x1) - m,
-      z0: Math.min(a.z0, a.z1) + m, z1: Math.max(a.z0, a.z1) - m
-    };
+    const x0 = Math.min(a.x0, a.x1);
+    const x1 = Math.max(a.x0, a.x1);
+    const z0 = Math.min(a.z0, a.z1);
+    const z1 = Math.max(a.z0, a.z1);
+    // Keep a band along the edges free (spotInset), plus room for the whole small egg
+    const mx = (x1 - x0) * P.spotInset + P.eggLength * P.miniScale * 0.6;
+    const mz = (z1 - z0) * P.spotInset + P.eggLength * P.miniScale * 0.6;
+    return { x0: x0 + mx, x1: x1 - mx, z0: z0 + mz, z1: z1 - mz };
   }
   const clampTo = (p, A) => ({ x: Math.min(A.x1, Math.max(A.x0, p.x)), z: Math.min(A.z1, Math.max(A.z0, p.z)) });
   const rnd = (a, b) => a + Math.random() * (b - a);
@@ -117,6 +122,8 @@ export function createGame(world, P, hooks) {
       bonus = 0;
       combo = 0;
       lastPick = -1e9;
+      penalties = 0;
+      lastPenalty = -1e9;
       plan = [];
       refill(world.eggPos());
       target = { ...plan.shift(), n: 1 };
@@ -140,11 +147,18 @@ export function createGame(world, P, hooks) {
       // Roll well over it: the big egg's middle must come close, the edge is not enough
       if (dist(world.eggPos(), target) < P.pickup * P.eggWidth / 2) pick(now);
     },
+    // The egg hit a wall: lose points (one bounce sequence counts once)
+    bump(now) {
+      if (!active || P.bumpPenalty <= 0 || now - lastPenalty < 600) return 0;
+      lastPenalty = now;
+      penalties += P.bumpPenalty;
+      return P.bumpPenalty;
+    },
     get active() { return active; },
     // For the score line
     stats(now) {
       const streak = target && progress(now) < 1 ? combo : 0;
-      return { eggs, bonus, total: eggs + bonus, streak };
+      return { eggs, bonus, penalties, total: eggs + bonus - penalties, streak };
     }
   };
 }

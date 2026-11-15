@@ -51,6 +51,8 @@ export const DEFAULT_PARAMS = {
   comboSec: 4,            // seconds per small egg to keep the streak (its countdown: yellow -> orange -> red)
   miniOrange: '#F07C1E',  // middle color of the countdown (start = digitColor, end = outlineEnd, expired = lineColor)
   ticks: false,           // tick sound during the countdown (small vibrations in red are always on)
+  spotInset: 0.12,        // keep small eggs this far in from the screen edges (fraction of the area on each side)
+  bumpPenalty: 1,         // points lost per wall bump while playing (0 = no penalty)
   dotNextSize: 0.03,      // the dot for the next egg (yellow)
   dotLaterSize: 0.025,    // the dot for the egg after that (light blue)
 

@@ -139,9 +139,10 @@ function finish() {
   if (played) {
     const st = game.stats(performance.now());
     scoreEl.className = 'score final';
-    scoreEl.textContent = st.bonus > 0
-      ? `${st.eggs} egg + ${st.bonus} bonus = ${st.total}`
-      : `${st.eggs} egg samlet`;
+    const parts = [`${st.eggs} egg`];
+    if (st.bonus > 0) parts.push(`+ ${st.bonus} bonus`);
+    if (st.penalties > 0) parts.push(`− ${st.penalties} dult`);
+    scoreEl.textContent = parts.length > 1 ? `${parts.join(' ')} = ${st.total}` : `${st.eggs} egg samlet`;
   }
 }
 
@@ -198,10 +199,11 @@ game = createGame(world, P, {
 function floatLabel(e) {
   const p = world.game.project(e.x, e.z);
   const el = document.createElement('div');
-  el.className = 'float';
-  el.textContent = '+' + e.combo; // in a streak, each egg is worth more
-  el.style.left = p.x + 'px';
-  el.style.top = p.y + 'px';
+  el.className = e.minus ? 'float minus' : 'float';
+  el.textContent = e.text || '+' + e.combo; // in a streak, each egg is worth more
+  // Keep the label on screen, also when the egg is half outside the edge
+  el.style.left = Math.min(innerWidth - 30, Math.max(30, p.x)) + 'px';
+  el.style.top = Math.min(innerHeight - 120, Math.max(90, p.y)) + 'px';
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 1000);
 }
@@ -224,6 +226,14 @@ world.onBump((s) => {
   lastBumpAt = t;
   haptic.bump(s);
   sound.bump(s);
+  // Minus points for bumping into the walls while playing
+  if (game && game.active) {
+    const lost = game.bump(t);
+    if (lost > 0) {
+      const e = world.eggPos();
+      floatLabel({ x: e.x, z: e.z, text: '−' + lost, minus: true });
+    }
+  }
 });
 
 // Lab: the ⚙︎ button toggles it (?lab opens it at start)
@@ -297,7 +307,7 @@ world.start((dt, now) => {
     if (game.active) {
       game.update(now);
       const st = game.stats(now);
-      scoreEl.textContent = st.eggs === 0 ? '' : (st.streak > 1 ? `🥚 ${st.total}  ·  rekke ×${st.streak}` : `🥚 ${st.total}`);
+      scoreEl.textContent = st.eggs === 0 && st.penalties === 0 ? '' : (st.streak > 1 ? `🥚 ${st.total}  ·  rekke ×${st.streak}` : `🥚 ${st.total}`);
     }
     if (remaining <= 0) finish();
   } else if (done) {

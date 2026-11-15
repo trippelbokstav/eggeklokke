@@ -66,6 +66,8 @@ export function createLab(P, world, diag) {
   game.add(P, 'comboSec', 1, 10, 0.5).name('bonus-tid per egg (s)').onChange(repaint);
   game.addColor(P, 'miniOrange').name('nedtelling midt').onChange(repaint);
   game.add(P, 'ticks').name('tikking').onChange(repaint);
+  game.add(P, 'spotInset', 0, 0.35, 0.01).name('avstand fra kant').onChange(repaint);
+  game.add(P, 'bumpPenalty', 0, 5, 1).name('minus per dult').onChange(repaint);
   game.add(P, 'dotNextSize', 0.005, 0.2, 0.005).name('prikk neste (gul)').onChange(repaint);
   game.add(P, 'dotLaterSize', 0.005, 0.2, 0.005).name('prikk etter (blå)').onChange(repaint);
 
