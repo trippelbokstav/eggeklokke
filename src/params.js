@@ -28,21 +28,21 @@ export const DEFAULT_PARAMS = {
   shadowOffset: 0.14,
 
   // Camera (straight down)
-  fov: 14,                // small = flat, far away
-  view: 7,                // visible size of the short screen side, in scene units
+  fov: 4,                 // small = flat, far away
+  view: 9.8,              // visible size of the short screen side, in scene units
 
   // Physics
   gravity: 18,
-  tilt: 0.55,             // how much of gravity tilting can turn sideways
+  tilt: 0.66,             // how much of gravity tilting can turn sideways
   friction: 0.7,
-  bounce: 0.35,
+  bounce: 0.41,
   linDamp: 0.15,
   angDamp: 0.35,
 
   // Behaviour
   idleSec: 10,            // glide home to the zero position after this many seconds without play
   homeSpeed: 1.8,         // how fast it glides home (higher = faster)
-  wallOut: 0.4,           // how far outside the screen the walls are, in egg widths (0 = at the edge)
+  wallOut: 0.1,           // how far outside the screen the walls are, in egg widths (0 = at the edge)
   alarmJump: 0.8
 };
 

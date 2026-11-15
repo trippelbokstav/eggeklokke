@@ -37,7 +37,7 @@ export function createLab(P, world) {
   look.add(P, 'shadowOffset', 0, 0.6, 0.01).name('skygge forskyvning').onChange(changed);
 
   const cam = gui.addFolder('Kamera');
-  cam.add(P, 'fov', 4, 60, 1).name('perspektiv (fov)').onChange(changed);
+  cam.add(P, 'fov', 1, 60, 0.5).name('perspektiv (fov)').onChange(changed);
   cam.add(P, 'view', 3, 16, 0.1).name('utsnitt (zoom)').onChange(changed);
 
   const phys = gui.addFolder('Fysikk');
