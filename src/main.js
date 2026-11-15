@@ -2,7 +2,7 @@
 import { loadParams } from './params.js';
 import { createWorld } from './world.js';
 import { createInput } from './input.js';
-import { haptic } from './native.js';
+import { haptic, hapticDiag } from './native.js';
 import { sound, unlockAudio } from './sound.js';
 import { totalSeconds, fmt, boilTemp, altFactor, NAMES, SIZENAMES } from './timer.js';
 
@@ -174,7 +174,12 @@ let lab = null;
 async function toggleLab() {
   if (!lab) {
     const m = await import('./lab.js');
-    lab = m.createLab(P, world);
+    lab = m.createLab(P, world, {
+      haptics: hapticDiag,
+      gyro: input.diag,
+      testHaptic() { haptic.alarm(); },
+      askGyro() { input.requestPermission().then(updateTip); }
+    });
     lab.open();
     return;
   }

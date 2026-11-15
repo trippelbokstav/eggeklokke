@@ -29,7 +29,7 @@ export const DEFAULT_PARAMS = {
 
   // Camera (straight down)
   fov: 4,                 // small = flat, far away
-  view: 9.8,              // visible size of the short screen side, in scene units
+  view: 5.3,              // visible size of the short screen side, in scene units
 
   // Physics
   gravity: 18,
@@ -42,7 +42,7 @@ export const DEFAULT_PARAMS = {
   // Behaviour
   idleSec: 10,            // glide home to the zero position after this many seconds without play
   homeSpeed: 1.8,         // how fast it glides home (higher = faster)
-  wallOut: 0.1,           // how far outside the screen the walls are, in egg widths (0 = at the edge)
+  wallOut: 0.65,          // how far outside the screen the walls are, in egg widths (0 = at the edge)
   alarmJump: 0.8
 };
 

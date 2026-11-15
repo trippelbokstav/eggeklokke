@@ -13,12 +13,25 @@ export function createInput(stage) {
   let lastInteract = performance.now();
 
   const gyro = { x: 0, z: 0 };
+
+  // What the gyro has done, for the Diagnose folder in the lab
+  const diag = {
+    api: window.DeviceOrientationEvent ? 'finnes' : 'MANGLER',
+    askApi: (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission === 'function') ? 'finnes' : 'finnes ikke',
+    permission: 'ikke spurt',
+    events: 0,
+    beta: '-',
+    gamma: '-'
+  };
   const drag = { x: 0, z: 0, active: false, sx: 0, sy: 0 };
 
   function touch() { lastInteract = performance.now(); }
 
   function onOrientation(e) {
+    diag.events++;
     if (e.beta == null || e.gamma == null) return;
+    diag.beta = e.beta.toFixed(1);
+    diag.gamma = e.gamma.toFixed(1);
     beta = e.beta;
     gamma = e.gamma;
     if (!gyroActive) {
@@ -60,10 +73,16 @@ export function createInput(stage) {
       try {
         const DOE = window.DeviceOrientationEvent;
         if (DOE && typeof DOE.requestPermission === 'function') {
-          await DOE.requestPermission();
+          diag.permission = 'spør …';
+          diag.permission = await DOE.requestPermission();
+        } else {
+          diag.permission = 'trengs ikke';
         }
-      } catch (e) { /* denied or not available: drag still works */ }
+      } catch (e) {
+        diag.permission = 'feil: ' + String((e && e.message) || e); // drag still works
+      }
     },
+    diag,
     get gyroActive() { return gyroActive; },
     tilt() {
       return { x: clamp(gyro.x + drag.x, -1, 1), z: clamp(gyro.z + drag.z, -1, 1) };

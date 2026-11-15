@@ -3,7 +3,8 @@
 import GUI from 'lil-gui';
 import { DEFAULT_PARAMS, saveParams, clearParams } from './params.js';
 
-export function createLab(P, world) {
+// diag: { haptics, gyro, testHaptic(), askGyro() } from main.js
+export function createLab(P, world, diag) {
   const gui = new GUI({ title: 'Eggelab' });
   gui.domElement.classList.add('egglab');
 
@@ -68,6 +69,27 @@ export function createLab(P, world) {
     },
     jump() { world.jump(P.alarmJump || 1); }
   };
+  // Diagnose: what the phone actually does (haptics + gyro)
+  if (diag) {
+    const d = gui.addFolder('Diagnose');
+    const h = diag.haptics;
+    const g = diag.gyro;
+    d.add(h, 'native').name('kjører som app').disable().listen();
+    d.add(h, 'plugin').name('haptics-plugin').disable().listen();
+    d.add(h, 'calls').name('haptics kalt').disable().listen();
+    d.add(h, 'ok').name('haptics ok').disable().listen();
+    d.add(h, 'lastError').name('haptics feil').disable().listen();
+    d.add(g, 'api').name('gyro-API').disable().listen();
+    d.add(g, 'askApi').name('tillatelse-API').disable().listen();
+    d.add(g, 'permission').name('gyro-tillatelse').disable().listen();
+    d.add(g, 'events').name('gyro-hendelser').disable().listen();
+    d.add(g, 'beta').name('vipp fram/bak').disable().listen();
+    d.add(g, 'gamma').name('vipp sideveis').disable().listen();
+    d.add(diag, 'testHaptic').name('📳 Test vibrasjon');
+    d.add(diag, 'askGyro').name('🧭 Be om gyro-tilgang');
+    d.close();
+  }
+
   gui.add(actions, 'jump').name('🥚 Test hopp');
   gui.add(actions, 'copy').name('📋 Kopier verdier');
   gui.add(actions, 'reset').name('↺ Nullstill');

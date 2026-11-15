@@ -4,10 +4,30 @@ import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 
 export const isNative = Capacitor.isNativePlatform();
 
+// What the haptics bridge has done, for the Diagnose folder in the lab
+export const hapticDiag = {
+  native: isNative ? 'ja' : 'nei (nettleser)',
+  platform: Capacitor.getPlatform(),
+  plugin: Capacitor.isPluginAvailable('Haptics') ? 'funnet' : 'MANGLER',
+  calls: 0,
+  ok: 0,
+  lastError: '-'
+};
+
 const webVibrate = (pattern) => {
   try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* ignore */ }
 };
-const safe = (fn) => { try { fn(); } catch (e) { /* ignore */ } };
+// Run a haptics call and note how it went (the calls return promises, so catch those too)
+const safe = (fn) => {
+  hapticDiag.calls++;
+  try {
+    Promise.resolve(fn())
+      .then(() => { hapticDiag.ok++; })
+      .catch((e) => { hapticDiag.lastError = String((e && e.message) || e); });
+  } catch (e) {
+    hapticDiag.lastError = String((e && e.message) || e);
+  }
+};
 
 let lastBump = 0;
 
