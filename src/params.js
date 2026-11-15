@@ -36,6 +36,7 @@ export const DEFAULT_PARAMS = {
   gyroRange: 20,          // degrees of tilt for full strength (low = sensitive)
   gyroDead: 1.5,          // degrees around "flat" that are ignored (calm hands)
   gyroSmooth: 0.1,        // seconds: how softly the egg follows the tilt (low = quick)
+  stillDeg: 1,            // a change smaller than this (degrees) is "lying still", not playing
 
   // Physics
   gravity: 18,

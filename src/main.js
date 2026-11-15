@@ -273,7 +273,7 @@ if (fpsEl) {
 world.start((dt, now) => {
   // ---- Tilt, or glide home to the zero position when nobody plays ----
   const idle = running && input.idleFor() > P.idleSec * 1000;
-  if (idle && !centerMode) { centerMode = true; input.recalibrate(); world.setPosed(true, P.homeSpeed); }
+  if (idle && !centerMode) { centerMode = true; input.recalibrate(true); world.setPosed(true, P.homeSpeed); }
   if (!idle && centerMode) { centerMode = false; if (running) world.setPosed(false); }
   const want = centerMode ? { x: 0, z: 0 } : input.tilt();
   const k = 1 - Math.exp(-dt / Math.max(0.01, P.gyroSmooth)); // smoothing time in seconds

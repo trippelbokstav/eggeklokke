@@ -1,8 +1,6 @@
 // Tilt input: gyro (phone tilt) and finger/mouse drag. Both give a tilt of -1..1 on x and z.
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-const MOVE_THRESHOLD = 0.1; // how much the tilt must change to count as "playing"
-
 const rad = (d) => (d * Math.PI) / 180;
 
 // The "up" direction seen from the phone (screen x = right, y = up, z = out of the screen),
@@ -35,7 +33,10 @@ function shape(d, range, dead) {
 export function createInput(stage, P) {
   let up = null;            // current tilt angles { side, pitch } (see angles)
   let base = null;          // the angles when the phone is held "flat" (how you hold it)
-  let anchor = { x: 0, z: 0 };
+  let anchor = null;        // angles at the last real movement (for "is anyone playing?")
+  // After the egg went home: ignore the gyro until the phone has moved and is held still again,
+  // then make that the new "flat". (So picking the phone up from the table doesn't fling the egg.)
+  const settle = { on: false, moved: false, lastMove: 0 };
   let gyroActive = false;
   let lastInteract = performance.now();
 
@@ -62,22 +63,34 @@ export function createInput(stage, P) {
     diag.beta = e.beta.toFixed(1);
     diag.gamma = e.gamma.toFixed(1);
     up = angles(upVector(e.beta, e.gamma));
+    const now = performance.now();
     if (!gyroActive) {
       gyroActive = true;
       base = up;
-      anchor = { x: 0, z: 0 };
+      anchor = up;
+    }
+    // Interaction = the angle CHANGES. A phone lying on a table (or held dead still) is not playing,
+    // however tilted it is. Hands always move a little more than stillDeg; a table doesn't.
+    const moved = Math.max(Math.abs(up.side - anchor.side), Math.abs(wrap(up.pitch - anchor.pitch))) > P.stillDeg;
+    if (moved) {
+      anchor = up;
+      touch();
+      settle.lastMove = now;
+      settle.moved = true;
+    }
+    if (settle.on) {
+      gyro.x = 0;
+      gyro.z = 0;
+      if (settle.moved && now - settle.lastMove > 500) { base = up; settle.on = false; }
+      diag.tiltX = 'venter';
+      diag.tiltZ = 'venter';
+      return;
     }
     // Right side down -> side falls -> roll right. Top edge down -> pitch falls -> roll up the screen.
     gyro.x = shape(base.side - up.side, P.gyroRange, P.gyroDead);
     gyro.z = shape(wrap(up.pitch - base.pitch), P.gyroRange, P.gyroDead);
     diag.tiltX = gyro.x.toFixed(2);
     diag.tiltZ = gyro.z.toFixed(2);
-    // Steering: the phone is tilted (outside the dead zone and a bit more), or it moved
-    if (Math.hypot(gyro.x, gyro.z) > 0.2) touch();
-    if (Math.hypot(gyro.x - anchor.x, gyro.z - anchor.z) > MOVE_THRESHOLD) {
-      anchor = { x: gyro.x, z: gyro.z };
-      touch();
-    }
   }
   window.addEventListener('deviceorientation', onOrientation);
 
@@ -121,13 +134,16 @@ export function createInput(stage, P) {
       return { x: clamp(gyro.x + drag.x, -1, 1), z: clamp(gyro.z + drag.z, -1, 1) };
     },
     idleFor() { return performance.now() - lastInteract; },
-    // Make the current phone angle the new "flat"
-    recalibrate() {
+    // Make the current phone angle the new "flat".
+    // settleAfterMove: wait until the phone has been moved and held still again (used when the egg goes home)
+    recalibrate(settleAfterMove = false) {
       if (!up) return;
       base = up;
+      anchor = up;
       gyro.x = 0;
       gyro.z = 0;
-      anchor = { x: 0, z: 0 };
+      settle.on = settleAfterMove;
+      settle.moved = false;
     },
     touch
   };
