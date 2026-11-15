@@ -32,6 +32,7 @@ export const DEFAULT_PARAMS = {
   view: 5.3,              // visible size of the short screen side, in scene units
 
   // Gyro (tilting the phone)
+  gyroAbsolute: true,     // true: flat = screen level (like a marble in a tray). false: flat = how you hold it at Start
   tilt: 0.66,             // how much of gravity tilting can turn sideways (strength at full tilt)
   gyroRange: 20,          // degrees of tilt for full strength (low = sensitive)
   gyroDead: 1.5,          // degrees around "flat" that are ignored (calm hands)
@@ -64,7 +65,7 @@ export const DEFAULT_PARAMS = {
   alarmJump: 0.8
 };
 
-const STORE_KEY = 'eggeklokke-lab-v6'; // bump when defaults change, so old lab values don't override them
+const STORE_KEY = 'eggeklokke-lab-v7'; // bump when defaults change, so old lab values don't override them
 
 export function loadParams(useStored) {
   const params = { ...DEFAULT_PARAMS };

@@ -42,6 +42,7 @@ export function createLab(P, world, diag) {
   cam.add(P, 'view', 3, 16, 0.1).name('utsnitt (zoom)').onChange(changed);
 
   const gyro = gui.addFolder('Gyro');
+  gyro.add(P, 'gyroAbsolute').name('vannrett = null').onChange(repaint);
   gyro.add(P, 'gyroRange', 5, 60, 1).name('vinkel for full fart (°)').onChange(repaint);
   gyro.add(P, 'gyroDead', 0, 10, 0.1).name('dødsone (°)').onChange(repaint);
   gyro.add(P, 'gyroSmooth', 0.01, 1, 0.01).name('glatting (s)').onChange(repaint);

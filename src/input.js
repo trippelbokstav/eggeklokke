@@ -21,6 +21,7 @@ function angles(u) {
   return { side: deg(Math.asin(clamp(u.x, -1, 1))), pitch: deg(Math.atan2(u.y, u.z)) };
 }
 const wrap = (d) => ((d + 540) % 360) - 180;
+const FLAT = { side: 0, pitch: 0 }; // screen level, facing up
 
 // Degrees of tilt -> -1..1, with a dead zone in the middle and full effect at `range` degrees
 function shape(d, range, dead) {
@@ -69,6 +70,8 @@ export function createInput(stage, P) {
       base = up;
       anchor = up;
     }
+    // Absolute mode: "flat" = the screen is level (at right angles to gravity), like a marble in a tray
+    if (P.gyroAbsolute) { base = FLAT; settle.on = false; }
     // Interaction = the angle CHANGES. A phone lying on a table (or held dead still) is not playing,
     // however tilted it is. Hands always move a little more than stillDeg; a table doesn't.
     const moved = Math.max(Math.abs(up.side - anchor.side), Math.abs(wrap(up.pitch - anchor.pitch))) > P.stillDeg;
@@ -138,7 +141,7 @@ export function createInput(stage, P) {
     // Make the current phone angle the new "flat".
     // settleAfterMove: wait until the phone has been moved and held still again (used when the egg goes home)
     recalibrate(settleAfterMove = false) {
-      if (!up) return;
+      if (!up || P.gyroAbsolute) return; // absolute mode never recalibrates: level is level
       base = up;
       anchor = up;
       gyro.x = 0;
