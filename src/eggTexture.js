@@ -56,7 +56,7 @@ export function createEggTexture(W = 1024, H = 512) {
   // colors: { shell, dot, digit }, opts: { dotCount, dotSize, digitSize, digitRepeat }
   function paint(timeText, colors, opts) {
     const key = [timeText, colors.shell, colors.dot, colors.digit, opts.dotCount, opts.dotSize, opts.digitSize, opts.digitRepeat].join('|');
-    if (key === last) return;
+    if (key === last) return false;
     last = key;
 
     ctx.fillStyle = colors.shell;
@@ -91,6 +91,7 @@ export function createEggTexture(W = 1024, H = 512) {
     for (let i = 0; i < repeat; i++) ctx.fillText(timeText, cell * (i + 0.5), H / 2 + size * 0.04);
 
     texture.needsUpdate = true;
+    return true;
   }
 
   return { texture, bump, paint };

@@ -40,6 +40,7 @@ export function createLab(P, world, diag) {
   const cam = gui.addFolder('Kamera');
   cam.add(P, 'fov', 1, 60, 0.5).name('perspektiv (fov)').onChange(changed);
   cam.add(P, 'view', 3, 16, 0.1).name('utsnitt (zoom)').onChange(changed);
+  cam.add(P, 'pixelRatio', 0.75, 3, 0.25).name('oppløsning').onChange(changed);
 
   const gyro = gui.addFolder('Gyro');
   gyro.add(P, 'gyroAbsolute').name('vannrett = null').onChange(repaint);
@@ -98,6 +99,8 @@ export function createLab(P, world, diag) {
     const d = gui.addFolder('Diagnose');
     const h = diag.haptics;
     const g = diag.gyro;
+    d.add(world.stats, 'fps').name('bilder per sekund').disable().listen();
+    d.add(world.stats, 'draws').name('tegner per sekund').disable().listen();
     d.add(h, 'native').name('kjører som app').disable().listen();
     d.add(h, 'plugin').name('haptics-plugin').disable().listen();
     d.add(h, 'calls').name('haptics kalt').disable().listen();

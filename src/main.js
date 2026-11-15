@@ -266,7 +266,7 @@ if (fpsEl) {
   fpsEl.className = 'fps';
   document.body.appendChild(fpsEl);
   setInterval(() => {
-    fpsEl.textContent = `${world.stats.fps} fps · fysikk ${world.stats.physicsMs.toFixed(1)} ms · ${devicePixelRatio}x`;
+    fpsEl.textContent = `${world.stats.fps} fps · tegner ${world.stats.draws}/s · fysikk ${world.stats.physicsMs.toFixed(1)} ms`;
   }, 500);
 }
 

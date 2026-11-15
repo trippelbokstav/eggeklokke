@@ -37,7 +37,7 @@ export async function createWorld(container, P, focus = container) {
 
   // ---------- three.js ----------
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, P.pixelRatio));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   container.appendChild(renderer.domElement);
 
@@ -104,6 +104,7 @@ export async function createWorld(container, P, focus = container) {
       if (w > 116) { size = Math.floor(size * 116 / w); ctx.font = `600 ${size}px "Nunito", "Avenir Next", system-ui, sans-serif`; }
       ctx.fillText(text, 64, 68);
       tex.needsUpdate = true;
+      dirty = true;
     };
     return mesh;
   }
@@ -176,6 +177,7 @@ export async function createWorld(container, P, focus = container) {
       .setCanSleep(false)
   );
   let posed = true;
+  let dirty = true;      // something changed that must be drawn
   let poseSpeed = 9;     // glide speed to the zero position
   let outlinePulse = 0;
   const tmpPos = new THREE.Vector3();
@@ -234,7 +236,9 @@ export async function createWorld(container, P, focus = container) {
     outline.scale.setScalar(1 + P.outline * (1 + outlinePulse));
     shadow.visible = P.shadowOpacity > 0;
     camera.fov = P.fov;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, P.pixelRatio));
     resize();
+    dirty = true;
   }
 
   function step() {
@@ -245,6 +249,11 @@ export async function createWorld(container, P, focus = container) {
       const e = 1 - Math.exp(-STEP * poseSpeed);
       tmpPos.set(t.x, t.y, t.z).lerp(posePos, e);
       tmpRot.set(r.x, r.y, r.z, r.w).slerp(poseRot, e);
+      // Snap the last bit, so it really stops (and nothing needs redrawing)
+      if (tmpPos.distanceToSquared(posePos) < 1e-6 && 1 - Math.abs(tmpRot.dot(poseRot)) < 1e-7) {
+        tmpPos.copy(posePos);
+        tmpRot.copy(poseRot);
+      }
       eggBody.setNextKinematicTranslation({ x: tmpPos.x, y: tmpPos.y, z: tmpPos.z });
       eggBody.setNextKinematicRotation({ x: tmpRot.x, y: tmpRot.y, z: tmpRot.z, w: tmpRot.w });
       world.step();
@@ -283,11 +292,14 @@ export async function createWorld(container, P, focus = container) {
   }
 
   // ---------- Game layer animation ----------
+  // Returns true while something animates (so the frame must be drawn)
   function animateGame(dt) {
     const sc = P.miniScale;
+    let busy = false;
     minis.forEach((m) => {
       const u = m.userData;
       if (u.mode === 'off') return;
+      if (u.mode !== 'idle') busy = true;
       u.t += dt;
       let k = 1;
       if (u.mode === 'in') {
@@ -295,7 +307,7 @@ export async function createWorld(container, P, focus = container) {
         k = backOut(t);
         if (t >= 1) { u.mode = 'idle'; u.t = 0; }
       } else if (u.mode === 'idle') {
-        k = 1 + 0.04 * Math.sin(u.t * 4); // gentle breathing
+        k = 1; // stands still (no breathing), so nothing needs redrawing
       } else if (u.mode === 'pop') {
         const t = Math.min(1, u.t / 0.25);
         k = t < 0.35 ? 1 + 0.5 * (t / 0.35) : 1.5 * (1 - (t - 0.35) / 0.65);
@@ -314,9 +326,12 @@ export async function createWorld(container, P, focus = container) {
     dots.forEach((d) => {
       if (!d.visible) return;
       d.userData.t += dt;
+      if (d.userData.t < 0.35) busy = true;
       const size = d === dots[0] ? P.dotNextSize : P.dotLaterSize;
-      d.scale.setScalar(size * backOut(Math.min(1, d.userData.t / 0.3)));
+      const sz = size * backOut(Math.min(1, d.userData.t / 0.3));
+      if (d.scale.x !== sz) { d.scale.setScalar(sz); busy = true; }
     });
+    return busy;
   }
 
   // ---------- Camera: straight down, far away ----------
@@ -324,6 +339,7 @@ export async function createWorld(container, P, focus = container) {
     const w = container.clientWidth || 1;
     const h = container.clientHeight || 1;
     renderer.setSize(w, h, false);
+    dirty = true;
     camera.aspect = w / h;
     const vHalf = THREE.MathUtils.degToRad(camera.fov / 2);
     const hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
@@ -361,9 +377,14 @@ export async function createWorld(container, P, focus = container) {
   let acc = 0;
   let last = performance.now();
   let frameHook = null;
-  const stats = { fps: 0, physicsMs: 0, frames: 0, since: performance.now(), physSum: 0 };
+  const stats = { fps: 0, draws: 0, physicsMs: 0, frames: 0, drawCount: 0, since: performance.now(), physSum: 0 };
+  const drawnPos = new THREE.Vector3(Infinity, 0, 0);
+  const drawnRot = new THREE.Quaternion();
 
   function frame(now) {
+    requestAnimationFrame(frame);
+    // Max 60 frames a second (a 120 Hz iPhone would otherwise do everything twice as often)
+    if (now - last < 1000 / 60 - 2) return;
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     if (frameHook) frameHook(dt, now);
@@ -383,9 +404,12 @@ export async function createWorld(container, P, focus = container) {
     stats.physSum += performance.now() - p0;
     stats.frames++;
     if (now - stats.since >= 1000) {
-      stats.fps = Math.round(stats.frames * 1000 / (now - stats.since));
+      const secs = (now - stats.since) / 1000;
+      stats.fps = Math.round(stats.frames / secs);
+      stats.draws = Math.round(stats.drawCount / secs);
       stats.physicsMs = stats.physSum / stats.frames;
       stats.frames = 0;
+      stats.drawCount = 0;
       stats.physSum = 0;
       stats.since = now;
     }
@@ -404,21 +428,32 @@ export async function createWorld(container, P, focus = container) {
     shadow.matrix.copy(shift).multiply(flatten).multiply(egg.matrixWorld);
     shadowMat.opacity = P.shadowOpacity * Math.max(0.35, 1 - lift * 0.3);
 
-    animateGame(dt);
-    renderer.render(scene, camera);
-    requestAnimationFrame(frame);
+    // Draw only when something changed: the egg moved, an animation runs, or a texture/color changed.
+    // When the egg lies still (zero position, or the phone on the counter) the GPU can rest.
+    const animating = animateGame(dt);
+    const moved = egg.position.distanceToSquared(drawnPos) > 1e-7 || 1 - Math.abs(egg.quaternion.dot(drawnRot)) > 1e-8;
+    if (moved || animating || dirty) {
+      renderer.render(scene, camera);
+      drawnPos.copy(egg.position);
+      drawnRot.copy(egg.quaternion);
+      dirty = false;
+      stats.drawCount++;
+    }
   }
 
   return {
-    paint: shell.paint,
+    paint(text, colors, opts) { if (shell.paint(text, colors, opts)) dirty = true; },
+    invalidate() { dirty = true; },
     setTilt(x, z) { tilt.x = x; tilt.z = z; },
-    setGlow(color, amount) { eggMat.emissive.set(color).multiplyScalar(amount); },
-    setShadowColor(color) { shadowMat.color.set(color); },
+    setGlow(color, amount) { eggMat.emissive.set(color).multiplyScalar(amount); dirty = true; },
+    setShadowColor(color) { shadowMat.color.set(color); dirty = true; },
     // Outline color and a swell (0 = normal width)
     setOutline(color, pulse = 0) {
+      if (outline.material.color.getHexString() === color.replace('#', '').toLowerCase() && pulse === outlinePulse) return;
       outline.material.color.set(color);
       outlinePulse = pulse;
       outline.scale.setScalar(1 + P.outline * (1 + pulse));
+      dirty = true;
     },
     // true: glide to the zero position (setting the timer, or idle). false: let it roll.
     setPosed(on, speed = 9) {
@@ -463,8 +498,8 @@ export async function createWorld(container, P, focus = container) {
       // Recolor the current small egg (its countdown: yellow -> orange -> red -> light blue)
       tintTarget(colors) {
         const m = minis[miniIdx];
-        m.userData.tex.paint('', { shell: colors.shell, dot: colors.shell, digit: colors.shell },
-          { dotCount: 0, dotSize: 1, digitSize: 10, digitRepeat: 1 });
+        if (m.userData.tex.paint('', { shell: colors.shell, dot: colors.shell, digit: colors.shell },
+          { dotCount: 0, dotSize: 1, digitSize: 10, digitRepeat: 1 })) dirty = true;
         m.userData.label.userData.draw(String(m.userData.n), colors.digit);
       },
       // The current small egg pops
@@ -484,10 +519,11 @@ export async function createWorld(container, P, focus = container) {
           d.position.set(p.x, 0.003, p.z);
         });
       },
-      setDotColors(next, later) { dotMats[0].color.set(next); dotMats[1].color.set(later); },
+      setDotColors(next, later) { dotMats[0].color.set(next); dotMats[1].color.set(later); dirty = true; },
       clear() {
         minis.forEach((m) => { if (m.userData.mode !== 'off') Object.assign(m.userData, { mode: 'pop', t: 0 }); });
         dots.forEach((d) => { d.visible = false; d.userData.x = NaN; });
+        dirty = true;
       },
       // The free area (between the title and the panel) in floor coordinates
       freeArea() {

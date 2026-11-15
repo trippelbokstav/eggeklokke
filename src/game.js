@@ -20,6 +20,7 @@ export function createGame(world, P, hooks) {
   let target = null;   // { x, z, n, at }
   let plan = [];       // upcoming spots; the dots show the first two
   let nextTick = 0;
+  let lastTint = 0;
 
   // Countdown 0..1 for the current egg (>= 1 = too late for the streak)
   const progress = (now) => (now - target.at) / (P.comboSec * 1000);
@@ -138,7 +139,8 @@ export function createGame(world, P, hooks) {
       if (!active || !target) return;
       // Countdown: color and ticks (faster towards the end)
       const f = progress(now);
-      world.game.tintTarget(colors(f));
+      // Recolor ~12 times a second (smooth enough, and each recolor means a redraw)
+      if (now - lastTint > 80) { lastTint = now; world.game.tintTarget(colors(f)); }
       if (f < 1 && now >= nextTick) {
         hooks.onTick(f, f > 0.75);
         nextTick = now + (f < 0.5 ? 500 : f < 0.8 ? 300 : 160);

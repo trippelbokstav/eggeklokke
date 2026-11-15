@@ -27,6 +27,9 @@ export const DEFAULT_PARAMS = {
   shadowOpacity: 0.08,
   shadowOffset: 0.14,
 
+  // Rendering
+  pixelRatio: 2,          // max pixels per screen point (lower = lighter for the phone, a bit softer)
+
   // Camera (straight down)
   fov: 4,                 // small = flat, far away
   view: 5.3,              // visible size of the short screen side, in scene units
