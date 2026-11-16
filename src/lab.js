@@ -23,10 +23,16 @@ export function createLab(P, world, diag) {
 
   const yolk = gui.addFolder('Plomme');
   const yolkChanged = () => { saveParams(P); if (diag && diag.yolk) diag.yolk.wake(); };
-  yolk.add(P, 'yolkStiff', 30, 600, 5).name('spring').onChange(yolkChanged);
-  yolk.add(P, 'yolkDamp', 1, 30, 0.5).name('demping (lav = gelé)').onChange(yolkChanged);
+  yolk.add(P, 'yolkSoftStiff', 30, 800, 5).name('til bløt: spring').onChange(yolkChanged);
+  yolk.add(P, 'yolkSoftDamp', 1, 60, 0.5).name('til bløt: demping').onChange(yolkChanged);
+  yolk.add(P, 'yolkSmileStiff', 30, 800, 5).name('til smilende: spring').onChange(yolkChanged);
+  yolk.add(P, 'yolkSmileDamp', 1, 60, 0.5).name('til smilende: demping').onChange(yolkChanged);
+  yolk.add(P, 'yolkHardStiff', 30, 800, 5).name('til hard: spring').onChange(yolkChanged);
+  yolk.add(P, 'yolkHardDamp', 1, 60, 0.5).name('til hard: demping').onChange(yolkChanged);
   yolk.add(P, 'yolkLobe', 0, 1, 0.01).name('bløt: splash').onChange(yolkChanged);
-  yolk.add(P, 'yolkSmile', 0, 2, 0.05).name('smilende: smil').onChange(yolkChanged);
+  yolk.add(P, 'yolkWaist', 0.3, 1, 0.01).name('bløt: midje').onChange(yolkChanged);
+  yolk.add(P, 'yolkDrop', 0, 0.45, 0.01).name('bløt: dråper').onChange(yolkChanged);
+  yolk.add(P, 'yolkSmile', 0, 1.5, 0.05).name('smilende: smil (0 = sirkel)').onChange(yolkChanged);
   yolk.addColor(P, 'yolkSoftColor').name('farge bløt').onChange(yolkChanged);
   yolk.addColor(P, 'yolkSmileColor').name('farge smilende').onChange(yolkChanged);
   yolk.addColor(P, 'yolkHardColor').name('farge hard').onChange(yolkChanged);

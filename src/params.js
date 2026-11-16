@@ -13,10 +13,17 @@ export const DEFAULT_PARAMS = {
   sizeDamp: 12,           // spring damping (lower = more wobble/overshoot)
 
   // Yolk picker (− yolk +): 10 points that spring between soft, smiling and hard
-  yolkStiff: 170,          // spring stiffness (higher = snappier)
-  yolkDamp: 9,             // damping (lower = more jelly wobble)
-  yolkLobe: 0.3,           // how far the soft yolk splashes out (5 lobes)
-  yolkSmile: 1,            // how much the smiling yolk dents on top (the crooked smile)
+  // Motion depends on where it goes: soft = wobbly, hard = firm and concise
+  yolkSoftStiff: 150,      // spring stiffness toward soft (higher = snappier)
+  yolkSoftDamp: 6,         // damping toward soft (lower = more jelly wobble)
+  yolkSmileStiff: 200,
+  yolkSmileDamp: 18,
+  yolkHardStiff: 520,
+  yolkHardDamp: 44,        // about 2 * sqrt(stiffness) = no overshoot
+  yolkLobe: 0.85,          // how far the soft yolk splashes out (5 lobes)
+  yolkWaist: 0.62,        // soft: how far in the gaps between the lobes go (lower = deeper)
+  yolkDrop: 0.2,            // the drops on two of the soft lobes (radius, yolk = 1)
+  yolkSmile: 0.6,          // smiling: 0 = plain circle, 1 = full crooked smile
   yolkSoftColor: '#F29A0E',
   yolkSmileColor: '#F0AE0B',
   yolkHardColor: '#F4C84F',
@@ -83,7 +90,7 @@ export const DEFAULT_PARAMS = {
   alarmJump: 0.8
 };
 
-const STORE_KEY = 'eggeklokke-lab-v7'; // bump when defaults change, so old lab values don't override them
+const STORE_KEY = 'eggeklokke-lab-v8'; // bump when defaults change, so old lab values don't override them
 
 export function loadParams(useStored) {
   const params = { ...DEFAULT_PARAMS };

@@ -27,17 +27,31 @@ export function createYolk(canvas, P, seed = (Date.now() ^ (Math.random() * 1e9)
   const rand = rng(seed);
   const ctx = canvas.getContext('2d');
 
-  // ---- The seed's personality ----
-  const spin = rand() * Math.PI * 2;                       // where the first splash lobe points
-  const lobeLen = Array.from({ length: 5 }, () => 0.75 + rand() * 0.5);   // each lobe a bit different
-  const lobeTwist = Array.from({ length: 5 }, () => (rand() - 0.5) * 0.5); // pulled a bit sideways
-  const smileTilt = (rand() < 0.5 ? -1 : 1) * (0.12 + rand() * 0.18);    // the crooked smile leans left or right
-  const smileLean = (rand() - 0.5) * 0.5;                  // one cheek fuller than the other
-  const hiAngle = -2.3 + (rand() - 0.5) * 0.6;             // highlight up-left, give or take
-  const stiffJitter = Array.from({ length: N }, () => 0.75 + rand() * 0.5);
+  // ---- The seed's personality: rolled again on every change, so the yolk stays alive ----
+  let spin = rand() * Math.PI * 2;                        // where the first splash lobe points
+  let lobeLen, lobeTwist, smileTilt, smileLean, hiAngle, stiffJitter, dropLobes;
+  function roll() {
+    // Turn only a little each time, so the points never have to cross over each other
+    spin += (rand() - 0.5) * 0.9;
+    lobeLen = Array.from({ length: 5 }, () => 0.75 + rand() * 0.5);   // each lobe a bit different
+    lobeTwist = Array.from({ length: 5 }, () => (rand() - 0.5) * 0.5); // pulled a bit sideways
+    smileTilt = (rand() < 0.5 ? -1 : 1) * (0.12 + rand() * 0.18);    // the crooked smile leans left or right
+    smileLean = (rand() - 0.5) * 0.5;                     // one cheek fuller than the other
+    hiAngle = -2.3 + (rand() - 0.5) * 0.6;                // highlight up-left, give or take
+    stiffJitter = Array.from({ length: N }, () => 0.75 + rand() * 0.5);
+    // Two lobes carry a drop at the tip, about to break loose
+    const a = Math.floor(rand() * 5);
+    const b = (a + 1 + Math.floor(rand() * 4)) % 5;
+    dropLobes = [a, b];
+  }
+  roll();
 
   // Point angles around the middle (evenly spread, starting at the first lobe)
   const angle = (i) => spin + (i / N) * Math.PI * 2;
+  // Motion per target state: [stiffness, damping, kick]. Soft = wobbly, hard = firm and concise.
+  const motion = (st) => (st === 'soft' ? [P.yolkSoftStiff, P.yolkSoftDamp, 2.5]
+    : st === 'hard' ? [P.yolkHardStiff, P.yolkHardDamp, 0]
+    : [P.yolkSmileStiff, P.yolkSmileDamp, 0.3]);
 
   // Target shape for a state, in units of the yolk radius (1 = medium yolk)
   function targets(state) {
@@ -46,7 +60,7 @@ export function createYolk(canvas, P, seed = (Date.now() ^ (Math.random() * 1e9)
       let a = angle(i);
       let r;
       if (state === 'hard') {
-        r = 0.86; // tight and round
+        r = 0.88; // tight and round
       } else if (state === 'smile') {
         // A soft, wide blob, flatter on top and full at the bottom, tilted: a crooked smile
         const t = a - smileTilt;
@@ -57,17 +71,19 @@ export function createYolk(canvas, P, seed = (Date.now() ^ (Math.random() * 1e9)
         r = (ex * ey) / Math.sqrt((ey * c) ** 2 + (ex * s) ** 2);
         // dent on top (screen up = negative sin), so the upper edge curves like a smile
         const up = Math.max(0, -s);
-        r -= P.yolkSmile * 0.35 * up ** 3;
+        r -= 0.35 * up ** 3;
         // the bottom swells a little
         r += 0.06 * Math.max(0, s) ** 2;
+        // yolkSmile blends from a plain circle (0) to the full crooked smile (1)
+        r = 0.95 + (r - 0.95) * P.yolkSmile;
       } else {
         // Splash: 5 lobes (even points) and 5 waists (odd points), pulled in different directions
         const k = i >> 1;
         if (i % 2 === 0) {
-          r = 1 + P.yolkLobe * lobeLen[k];
+          r = 1 + P.yolkLobe * lobeLen[k] * (dropLobes.includes(k) ? 1.35 : 1);
           a += lobeTwist[k];
         } else {
-          r = 0.84;
+          r = P.yolkWaist;
         }
       }
       out.push([Math.cos(a) * r, Math.sin(a) * r]);
@@ -81,6 +97,8 @@ export function createYolk(canvas, P, seed = (Date.now() ^ (Math.random() * 1e9)
   let state = 'smile';
   const pts = targets(state).map(([x, y]) => ({ x, y, vx: 0, vy: 0 }));
   const hi = { d: HIGHLIGHT.smile[0], s: HIGHLIGHT.smile[1], o: HIGHLIGHT.smile[2], vd: 0, vs: 0, vo: 0 };
+  // The two drops: size springs with the yolk (0 when not soft)
+  const drops = [0, 1].map(() => ({ r: 0, v: 0 }));
   let color = hexToRgb(P.yolkSmileColor);
   let running = false;
   let last = 0;
@@ -89,19 +107,24 @@ export function createYolk(canvas, P, seed = (Date.now() ^ (Math.random() * 1e9)
     return hexToRgb(s === 'soft' ? P.yolkSoftColor : s === 'hard' ? P.yolkHardColor : P.yolkSmileColor);
   }
 
-  // Closed Catmull-Rom curve through the points, drawn as cubic Beziers
+  // Closed uniform cubic B-spline: the points pull on the curve like CVs (softer than passing through them)
+  const onCurve = (px, i) => {
+    const a = px[(i - 1 + N) % N];
+    const b = px[i];
+    const c = px[(i + 1) % N];
+    return [(a[0] + 4 * b[0] + c[0]) / 6, (a[1] + 4 * b[1] + c[1]) / 6];
+  };
   function tracePath(px) {
     ctx.beginPath();
     for (let i = 0; i < N; i++) {
-      const p0 = px[(i - 1 + N) % N];
       const p1 = px[i];
       const p2 = px[(i + 1) % N];
-      const p3 = px[(i + 2) % N];
-      if (i === 0) ctx.moveTo(p1[0], p1[1]);
+      if (i === 0) { const s = onCurve(px, 0); ctx.moveTo(s[0], s[1]); }
+      const e = onCurve(px, (i + 1) % N);
       ctx.bezierCurveTo(
-        p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6,
-        p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6,
-        p2[0], p2[1]
+        (2 * p1[0] + p2[0]) / 3, (2 * p1[1] + p2[1]) / 3,
+        (p1[0] + 2 * p2[0]) / 3, (p1[1] + 2 * p2[1]) / 3,
+        e[0], e[1]
       );
     }
     ctx.closePath();
@@ -118,7 +141,9 @@ export function createYolk(canvas, P, seed = (Date.now() ^ (Math.random() * 1e9)
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     // Radius: leave room for the longest splash lobe
-    const R = Math.min(w, h) / 2 / (1 + P.yolkLobe * 1.25 + 0.08);
+    // Radius: the longest lobe (with its drop) must fit. B-spline tip = (waist + 4 * tip + waist) / 6
+    const reach = (2 * P.yolkWaist + 4 * (1 + P.yolkLobe * 1.25 * 1.35)) / 6 + P.yolkDrop * 1.4;
+    const R = Math.min(w, h) / 2 / Math.max(1.05, reach);
     const cx = w / 2;
     const cy = h / 2;
     const px = pts.map((p) => [cx + p.x * R, cy + p.y * R]);
@@ -126,6 +151,20 @@ export function createYolk(canvas, P, seed = (Date.now() ^ (Math.random() * 1e9)
     tracePath(px);
     ctx.fillStyle = `rgb(${color.map(Math.round).join(',')})`;
     ctx.fill();
+    // Drops: round blobs sitting on the tip of two lobes, a bit wider than the lobe's neck
+    dropLobes.forEach((k, j) => {
+      const d = drops[j].r;
+      if (d < 0.01) return;
+      const [tx, ty] = onCurve(px, k * 2); // the lobe's tip on the curve, in pixels
+      const lx = tx - cx;
+      const ly = ty - cy;
+      const len = Math.hypot(lx, ly) || 1;
+      const ox = tx + (lx / len) * d * R * 0.35; // just past the tip: a thin neck, then the drop
+      const oy = ty + (ly / len) * d * R * 0.35;
+      ctx.beginPath();
+      ctx.arc(ox, oy, d * R, 0, Math.PI * 2);
+      ctx.fill();
+    });
 
     // Highlight: a small tilted oval up-left, fades away when the yolk sets
     if (hi.o > 0.01) {
@@ -146,23 +185,29 @@ export function createYolk(canvas, P, seed = (Date.now() ^ (Math.random() * 1e9)
     const tg = targets(state);
     const H = HIGHLIGHT[state];
     const goalColor = colorFor(state);
-    const n = Math.max(1, Math.ceil(dt / (1 / 240)));
+    const [stiff, damp] = motion(state);
+    const dropGoal = state === 'soft' ? P.yolkDrop : 0;
+    const n = Math.max(1, Math.ceil(dt / (1 / 480)));
     const h = dt / n;
     let moving = false;
     for (let k = 0; k < n; k++) {
       for (let i = 0; i < N; i++) {
         const p = pts[i];
-        const K = P.yolkStiff * stiffJitter[i];
-        p.vx += ((tg[i][0] - p.x) * K - p.vx * P.yolkDamp) * h;
-        p.vy += ((tg[i][1] - p.y) * K - p.vy * P.yolkDamp) * h;
+        // Soft gets uneven point speeds (jelly); hard moves all points together (firm)
+        const jit = state === 'hard' ? 1 : stiffJitter[i];
+        const K = stiff * jit;
+        p.vx += ((tg[i][0] - p.x) * K - p.vx * damp) * h;
+        p.vy += ((tg[i][1] - p.y) * K - p.vy * damp) * h;
         p.x += p.vx * h;
         p.y += p.vy * h;
       }
-      const K = P.yolkStiff * 0.6;
-      hi.vd += ((H[0] - hi.d) * K - hi.vd * P.yolkDamp) * h; hi.d += hi.vd * h;
-      hi.vs += ((H[1] - hi.s) * K - hi.vs * P.yolkDamp) * h; hi.s += hi.vs * h;
-      hi.vo += ((H[2] - hi.o) * K - hi.vo * P.yolkDamp) * h; hi.o += hi.vo * h;
+      const K = stiff * 0.6;
+      hi.vd += ((H[0] - hi.d) * K - hi.vd * damp) * h; hi.d += hi.vd * h;
+      hi.vs += ((H[1] - hi.s) * K - hi.vs * damp) * h; hi.s += hi.vs * h;
+      hi.vo += ((H[2] - hi.o) * K - hi.vo * damp) * h; hi.o += hi.vo * h;
+      drops.forEach((d) => { d.v += ((dropGoal - d.r) * stiff * 0.7 - d.v * damp) * h; d.r += d.v * h; });
     }
+    if (drops.some((d) => Math.abs(dropGoal - d.r) > 1e-3 || Math.abs(d.v) > 1e-3)) moving = true;
     const e = 1 - Math.exp(-dt * 6);
     color = color.map((v, i) => v + (goalColor[i] - v) * e);
     for (let i = 0; i < N; i++) {
@@ -198,8 +243,9 @@ export function createYolk(canvas, P, seed = (Date.now() ^ (Math.random() * 1e9)
     set(s) {
       if (s === state) return;
       state = s;
-      // A little kick outward when it splashes, inward when it sets: more jelly
-      const kick = s === 'soft' ? 2.5 : s === 'hard' ? -1.5 : 1;
+      roll(); // a new shape every time
+      // A kick outward when it splashes (jelly); none when it sets (firm)
+      const kick = motion(s)[2];
       pts.forEach((p) => { p.vx += p.x * kick; p.vy += p.y * kick; });
       wake();
     },
