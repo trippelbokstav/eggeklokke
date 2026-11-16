@@ -122,7 +122,7 @@ function refreshIdle() {
   const h = +altEl.value;
   altOut.textContent = h + ' m';
   altNote.textContent = h < 100
-    ? 'Vannet koker ved 100 °C.'
+    ? ''
     : 'Vannet koker ved ca. ' + boilTemp(h).toFixed(1).replace('.', ',') + ' °C, så egget trenger ca. ' +
       Math.round((altFactor(h) - 1) * 100) + ' % lengre tid.';
 }
@@ -210,7 +210,8 @@ updateTip();
 // ---------- 3D ----------
 let world = null;
 let game = null;
-world = await createWorld($('scene'), P, stage);
+// The egg rests in the middle of the free space (the spacer between altitude and yolk); the stage covers the whole app
+world = await createWorld($('scene'), P, $('spacer'), $('panel'));
 
 // The little game: collect small eggs while the big one boils
 game = createGame(world, P, {
@@ -243,6 +244,7 @@ stage.classList.add('ready');
 // Intro: keep the title up for 2 seconds from page start (the 3D loaded behind it), then let the app in
 setTimeout(() => {
   $('splash').classList.add('gone');
+  placeSizer();
   document.body.classList.remove('intro');
   setTimeout(() => $('splash').remove(), 800);
 }, Math.max(0, 2000 - performance.now()));
@@ -265,11 +267,15 @@ function setSize(k, force = false) {
 }
 // Put the buttons beside the resting egg and the name under it (in stage pixels)
 function placeSizer() {
+  world.relayout(); // make sure the resting spot matches the layout right now
   const r = stage.getBoundingClientRect();
-  // Fit: the largest egg plus the name under it must fit in the stage
+  // Fit: the largest egg must fit between the altitude (top) and the yolk (bottom), with its name under it
   let p = world.poseScreen();
-  const room = r.height / 2 - 52;                         // from the egg's middle down to the name
-  world.setFit(Math.min(1, room / (P.eggLength * P.sizeLarge / 2 * p.ppu)) || 1);
+  const top = document.querySelector('header').getBoundingClientRect().bottom;
+  const bottom = $('panel').getBoundingClientRect().top - 20; // the floating yolk reaches up a bit
+  const halfL = P.eggLength * P.sizeLarge / 2 * p.ppu;
+  const room = Math.min(p.y - top - 10, bottom - p.y - 46);
+  world.setFit(Math.max(0.3, Math.min(1, room / halfL)) || 1);
   p = world.poseScreen();
   const fit = (p.bottom - p.y) / (P.eggLength * sizeScale(sizeKey) / 2 * p.ppu);
   const half = P.eggWidth * P.sizeLarge / 2 * fit * p.ppu; // half width of a large egg, in pixels
@@ -287,7 +293,8 @@ function stepSize(dir) {
 }
 sizeDown.addEventListener('click', () => stepSize(-1));
 sizeUp.addEventListener('click', () => stepSize(1));
-new ResizeObserver(() => requestAnimationFrame(placeSizer)).observe(stage);
+const sizerRO = new ResizeObserver(() => requestAnimationFrame(placeSizer));
+[stage, document.querySelector('header'), $('panel')].forEach((el) => sizerRO.observe(el));
 sizer.hidden = false;
 setSize(sizeKey);
 // Debugging in the console: __egg.skip(330) jumps 330 seconds ahead

@@ -41,16 +41,23 @@
     display: flex; flex-direction: column;
     padding: env(safe-area-inset-top, 0px) 18px env(safe-area-inset-bottom, 0px);
   }
-  header { position: relative; padding-top: 20px; min-height: 50px; text-align: center; }
-  header .sub { margin: 0; padding: 0 44px; }
+  /* Setup screen: altitude on top, the egg in the middle of the screen, yolk + Start at the bottom.
+     The stage fills the whole app behind the top and bottom blocks, so the egg rests at screen center. */
+  header { position: relative; z-index: 1; padding-top: 12px; }
+  header .sub { display: none; margin: 8px 0 0; padding: 0 44px; text-align: center; }
+  body.running header .sub, body.done header .sub { display: block; }
+  .spacer { flex: 1 1 auto; }
+  .panel { position: relative; z-index: 1; }
   /* Intro: the title stands alone for 2 seconds, then lifts away and the app comes in */
   #splash {
     position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; background: var(--bg);
     transition: opacity .6s ease, visibility .6s;
   }
   #splash h1 { font-size: clamp(2.6rem, 12vw, 4rem); letter-spacing: -0.02em; animation: splashIn .7s cubic-bezier(.2, 1.4, .4, 1) both; transition: transform .6s cubic-bezier(.6, 0, .4, 1); }
+  #splash > div { text-align: center; padding: 0 32px; }
+  #splash p { margin: 10px auto 0; max-width: 18em; color: var(--muted); font-size: 1rem; line-height: 1.4; animation: splashIn .7s ease .35s both; }
   #splash.gone { opacity: 0; visibility: hidden; }
-  #splash.gone h1 { transform: translateY(-34vh) scale(.45); }
+  #splash.gone > div { transform: translateY(-6vh); transition: transform .6s cubic-bezier(.6, 0, .4, 1); }
   /* Fade only: a transform here would shift the measured layout (the − + around the egg) */
   .app { transition: opacity .7s ease .2s; }
   body.intro .app { opacity: 0; }
@@ -59,7 +66,7 @@
     #splash h1, .app { animation: none; transition: opacity .3s; transform: none !important; }
   }
   .labbtn {
-    position: absolute; left: 0; top: 10px; width: 40px; height: 40px; border: 0; border-radius: 12px;
+    position: absolute; right: 0; z-index: 2; top: 10px; width: 40px; height: 40px; border: 0; border-radius: 12px;
     background: transparent; color: var(--muted); font-size: 22px; line-height: 40px; cursor: pointer; padding: 0;
   }
   .labbtn:active { background: var(--track); }
@@ -67,7 +74,7 @@
   .sub { margin: 4px 0 0; font-size: .9rem; color: var(--muted); min-height: 1.2em; }
 
   /* The 3D scene */
-  #stage { position: relative; flex: 1 1 auto; min-height: 150px; touch-action: none; cursor: grab; }
+  #stage { position: absolute; inset: 0; z-index: 0; touch-action: none; cursor: grab; }
   #stage:active { cursor: grabbing; }
   #stage .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: .9rem; }
   #stage.ready .loading { display: none; }
@@ -88,8 +95,8 @@
   .seg input:checked + label small { color: var(--yolk-ink); opacity: .8; }
   .seg input:focus-visible + label { outline: 3px solid var(--ink); outline-offset: 2px; }
 
-  .alt-head { display: flex; justify-content: space-between; align-items: baseline; }
-  .alt-head strong { font-size: .9rem; }
+  .alt-head { display: flex; gap: 8px; align-items: baseline; padding-right: 44px; min-height: 40px; align-items: center; }
+  .alt-head label { font-size: .9rem; font-weight: 700; }
   .alt-head output { font-weight: 800; font-variant-numeric: tabular-nums; }
   /* Altitude: the slider track is the ground, the terrain line rises from it (canvas behind, bottom = track) */
   .altwrap { position: relative; padding-top: 52px; }
@@ -141,7 +148,10 @@
   .yolkbox { position: relative; height: 112px; }
   #yolkCanvas { position: absolute; left: 50%; top: 50%; width: 300px; height: 216px; transform: translate(-50%, -50%); pointer-events: none; display: block; }
   .stepbtn { position: relative; z-index: 1; }
-  .altblock { margin-bottom: 6px; } /* room for the splash, overlapping a little */
+  .altblock { margin: 0; }
+  .altblock .note { min-height: 1.35em; text-align: center; }
+  /* While setting the timer there is no need for the hint under Start */
+  body:not(.running):not(.done) .tip { display: none; } /* room for the splash, overlapping a little */
   /* The label sits above the floating yolk, with a halo in the page color so it always reads */
   .steplabel { position: relative; z-index: 1; text-shadow: 0 0 3px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg); margin: 0 0 8px; text-align: center; display: flex; flex-direction: column; align-items: center; }
   .steplabel strong { font-size: 1rem; font-weight: 800; }
@@ -175,14 +185,23 @@
 </style>
 </head>
 <body class="intro">
-<div id="splash" aria-hidden="true"><h1>Eggklokke</h1></div>
+<div id="splash" aria-hidden="true"><div><h1>Eggklokke</h1><p>Start klokka når egget går ned i kokende vann.</p></div></div>
 <div id="scene"></div>
 <div class="app">
   <header>
     <button class="labbtn" id="labBtn" type="button" aria-label="Åpne eggelaben">⚙︎</button>
     <h1 class="sr-only">Eggklokke</h1>
     <p class="sub" id="sub">Start klokka når egget går ned i kokende vann.</p>
+    <div class="altblock settings">
+      <div class="alt-head"><label for="alt">Høyde over havet</label><output id="altOut" for="alt">0 m</output></div>
+      <div class="altwrap">
+        <canvas id="terrain" aria-hidden="true"></canvas>
+        <input type="range" id="alt" min="0" max="2500" step="50" value="0">
+      </div>
+      <p class="note" id="altNote"></p>
+    </div>
   </header>
+  <div class="spacer" id="spacer"></div>
 
   <div id="stage" aria-label="Egget, som du kan rulle rundt på skjermen">
     <div class="loading">Varmer opp vannet …</div>
@@ -195,17 +214,8 @@
   <div class="sr-only" role="timer" id="srTime"></div>
   <div class="score" id="score" aria-live="polite"></div>
 
-  <div class="panel">
+  <div class="panel" id="panel">
     <div class="settings">
-      <div class="altblock">
-        <div class="alt-head"><strong><label for="alt">Høyde over havet</label></strong><output id="altOut" for="alt">0 m</output></div>
-        <div class="altwrap">
-          <canvas id="terrain" aria-hidden="true"></canvas>
-          <input type="range" id="alt" min="0" max="2500" step="50" value="0">
-        </div>
-        <p class="note" id="altNote">Vannet koker ved 100 °C.</p>
-      </div>
-
       <div class="stepper">
         <button class="stepbtn" id="yolkDown" type="button" aria-label="Bløtere plomme">−</button>
         <div class="yolkbox"><canvas id="yolkCanvas" aria-hidden="true"></canvas></div>

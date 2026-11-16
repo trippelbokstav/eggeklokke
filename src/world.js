@@ -32,7 +32,8 @@ function toonGradient() {
 }
 
 // container: the full-screen element the canvas fills. focus: the free area where the egg rests (zero position).
-export async function createWorld(container, P, focus = container) {
+// bottomEl: the UI block at the bottom (the small eggs in the game stay above it)
+export async function createWorld(container, P, focus = container, bottomEl = null) {
   await RAPIER.init();
 
   // ---------- three.js ----------
@@ -514,6 +515,8 @@ export async function createWorld(container, P, focus = container) {
       resize();
     },
     eggScale() { return size.now; },
+    // Re-measure the layout now (resting spot, walls), e.g. before placing UI around the egg
+    relayout() { resize(); },
     // Shrink the shown egg while setting the timer (1 = full size, used while playing)
     setFit(f) { size.fit = f; },
     // The resting egg on screen, in pixels: center, and how far down its bottom end reaches (at the target size)
@@ -584,7 +587,8 @@ export async function createWorld(container, P, focus = container) {
         const X = (px) => ((px - c.left) / c.width * 2 - 1) * floorHalf.x;
         const Z = (py) => ((py - c.top) / c.height * 2 - 1) * floorHalf.z;
         // Whole screen width, from the top of the screen down to the panel (the egg may roll a bit outside)
-        return { x0: -floorHalf.x, x1: floorHalf.x, z0: -floorHalf.z, z1: Z(r.bottom) };
+        const b = bottomEl ? Math.min(r.bottom, bottomEl.getBoundingClientRect().top) : r.bottom;
+        return { x0: -floorHalf.x, x1: floorHalf.x, z0: -floorHalf.z, z1: Z(b) };
       },
       // Floor point -> screen pixels (for the floating "+1" labels)
       project(x, z) {
