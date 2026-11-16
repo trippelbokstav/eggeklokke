@@ -32,6 +32,8 @@ export function createLab(P, world, diag) {
   yolk.add(P, 'yolkLobe', 0, 1, 0.01).name('bløt: splash').onChange(yolkChanged);
   yolk.add(P, 'yolkWaist', 0.3, 1, 0.01).name('bløt: midje').onChange(yolkChanged);
   yolk.add(P, 'yolkDrop', 0, 0.45, 0.01).name('bløt: dråper').onChange(yolkChanged);
+  yolk.add(P, 'yolkNeck', 0.2, 1.6, 0.01).name('bløt: dråpe-avstand').onChange(yolkChanged);
+  yolk.add(P, 'yolkGoo', 0, 1, 0.01).name('bløt: gooey hals').onChange(yolkChanged);
   yolk.add(P, 'yolkSmile', 0, 1.5, 0.05).name('smilende: smil (0 = sirkel)').onChange(yolkChanged);
   yolk.addColor(P, 'yolkSoftColor').name('farge bløt').onChange(yolkChanged);
   yolk.addColor(P, 'yolkSmileColor').name('farge smilende').onChange(yolkChanged);
