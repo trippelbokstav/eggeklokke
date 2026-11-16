@@ -279,7 +279,9 @@ function placeSizer() {
   p = world.poseScreen();
   const fit = (p.bottom - p.y) / (P.eggLength * sizeScale(sizeKey) / 2 * p.ppu);
   const half = P.eggWidth * P.sizeLarge / 2 * fit * p.ppu; // half width of a large egg, in pixels
-  const gap = Math.min(half + 46, (r.width / 2) - 30);
+  // Same column as the yolk row and the altitude: button centers at half the row width minus half a button
+  const rowW = Math.min(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--row-w')) || 298, r.width);
+  const gap = Math.max(half + 30, rowW / 2 - 26);
   sizer.style.setProperty('--egg-y', (p.y - r.top) + 'px');
   sizer.style.setProperty('--minus-x', (p.x - r.left - gap) + 'px');
   sizer.style.setProperty('--plus-x', (p.x - r.left + gap) + 'px');

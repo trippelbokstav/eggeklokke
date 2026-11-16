@@ -23,7 +23,7 @@
     }
   }
   * { box-sizing: border-box; }
-  :root { padding-top: 0; padding-bottom: 0; } /* the app pads for the notch itself (.app) */
+  :root { padding-top: 0; padding-bottom: 0; --row-w: 298px; } /* one column: − + rows and the altitude line up */ /* the app pads for the notch itself (.app) */
   html, body { height: 100%; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
@@ -95,7 +95,7 @@
   .seg input:checked + label small { color: var(--yolk-ink); opacity: .8; }
   .seg input:focus-visible + label { outline: 3px solid var(--ink); outline-offset: 2px; }
 
-  .alt-head { display: flex; gap: 8px; align-items: baseline; padding-right: 44px; min-height: 40px; align-items: center; }
+  .alt-head { display: flex; gap: 8px; min-height: 40px; align-items: center; }
   .alt-head label { font-size: .9rem; font-weight: 700; }
   .alt-head output { font-weight: 800; font-variant-numeric: tabular-nums; }
   /* Altitude: the slider track is the ground, the terrain line rises from it (canvas behind, bottom = track) */
@@ -144,11 +144,11 @@
   .szbtn:disabled, .stepbtn:disabled { opacity: .3; cursor: default; }
   .szbtn:focus-visible, .stepbtn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   /* Yolk picker: − yolk + in the panel */
-  .stepper { display: grid; grid-template-columns: 52px 170px 52px; justify-content: center; align-items: center; gap: 12px; }
+  .stepper { display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; gap: 12px; width: var(--row-w); max-width: 100%; margin: 0 auto; }
   .yolkbox { position: relative; height: 112px; }
   #yolkCanvas { position: absolute; left: 50%; top: 50%; width: 300px; height: 216px; transform: translate(-50%, -50%); pointer-events: none; display: block; }
   .stepbtn { position: relative; z-index: 1; }
-  .altblock { margin: 0; }
+  .altblock { margin: 0 auto; width: var(--row-w); max-width: 100%; }
   .altblock .note { min-height: 1.35em; text-align: center; }
   /* While setting the timer there is no need for the hint under Start */
   body:not(.running):not(.done) .tip { display: none; } /* room for the splash, overlapping a little */
