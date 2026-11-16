@@ -21,6 +21,16 @@ export function createLab(P, world, diag) {
   shape.add(P, 'sizeStiff', 40, 800, 5).name('størrelse spring').onChange(repaint);
   shape.add(P, 'sizeDamp', 2, 40, 0.5).name('størrelse demping').onChange(repaint);
 
+  const yolk = gui.addFolder('Plomme');
+  const yolkChanged = () => { saveParams(P); if (diag && diag.yolk) diag.yolk.wake(); };
+  yolk.add(P, 'yolkStiff', 30, 600, 5).name('spring').onChange(yolkChanged);
+  yolk.add(P, 'yolkDamp', 1, 30, 0.5).name('demping (lav = gelé)').onChange(yolkChanged);
+  yolk.add(P, 'yolkLobe', 0, 1, 0.01).name('bløt: splash').onChange(yolkChanged);
+  yolk.add(P, 'yolkSmile', 0, 2, 0.05).name('smilende: smil').onChange(yolkChanged);
+  yolk.addColor(P, 'yolkSoftColor').name('farge bløt').onChange(yolkChanged);
+  yolk.addColor(P, 'yolkSmileColor').name('farge smilende').onChange(yolkChanged);
+  yolk.addColor(P, 'yolkHardColor').name('farge hard').onChange(yolkChanged);
+
   const look = gui.addFolder('Utseende');
   look.add(P, 'matchBackground').name('egg = bakgrunn').onChange(repaint);
   look.addColor(P, 'colorStart').name('farge start').onChange(repaint);

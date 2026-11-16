@@ -12,6 +12,15 @@ export const DEFAULT_PARAMS = {
   sizeStiff: 260,         // spring stiffness (higher = snappier)
   sizeDamp: 12,           // spring damping (lower = more wobble/overshoot)
 
+  // Yolk picker (− yolk +): 10 points that spring between soft, smiling and hard
+  yolkStiff: 170,          // spring stiffness (higher = snappier)
+  yolkDamp: 9,             // damping (lower = more jelly wobble)
+  yolkLobe: 0.3,           // how far the soft yolk splashes out (5 lobes)
+  yolkSmile: 1,            // how much the smiling yolk dents on top (the crooked smile)
+  yolkSoftColor: '#F29A0E',
+  yolkSmileColor: '#F0AE0B',
+  yolkHardColor: '#F4C84F',
+
   // Look
   matchBackground: true,  // fresh egg = the page background color (colorStart is used if off)
   colorStart: '#E3ECEF',  // egg color (when matchBackground is off). The egg itself never changes color.

@@ -5,6 +5,7 @@ import { createInput } from './input.js';
 import { createGame } from './game.js';
 import { haptic, hapticDiag } from './native.js';
 import { sound, unlockAudio } from './sound.js';
+import { createYolk, YOLK_STATES } from './yolk.js';
 import { totalSeconds, fmt, boilTemp, altFactor, NAMES, SIZENAMES } from './timer.js';
 
 const $ = (id) => document.getElementById(id);
@@ -40,12 +41,35 @@ const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyV
 // Outline color along the boil: 0 = white, 0.5 = yellow, 1 = red
 const edgeColor = (p) => (p < 0.5 ? mix(P.outlineStart, P.outlineMid, p * 2) : mix(P.outlineMid, P.outlineEnd, (p - 0.5) * 2));
 
-const val = (name) => document.querySelector(`input[name="${name}"]:checked`).value;
 // Egg size: picked with − and + around the big egg (the egg itself grows)
 const SIZES = ['s', 'm', 'l'];
 const SIZE_GRAMS = { s: 'under 53 g', m: '53–63 g', l: 'over 63 g' };
 let sizeKey = 'm';
-const currentTotal = () => totalSeconds(val('d'), sizeKey, +altEl.value);
+const currentTotal = () => totalSeconds(doneKey, sizeKey, +altEl.value);
+
+// Yolk: picked with − and + around a morphing yolk (soft / smiling / hard)
+const DONE_DESC = { soft: 'rennende plomme', smile: 'myk, kremet plomme', hard: 'fast plomme' };
+const DONE_NAME = { soft: 'Bløtkokt', smile: 'Smilende', hard: 'Hardkokt' };
+let doneKey = 'smile';
+const yolk = createYolk($('yolkCanvas'), P);
+function setDone(k) {
+  doneKey = k;
+  yolk.set(k);
+  $('yolkName').textContent = DONE_NAME[k];
+  $('yolkDesc').textContent = DONE_DESC[k];
+  $('yolkDown').disabled = k === 'soft';
+  $('yolkUp').disabled = k === 'hard';
+}
+function stepDone(dir) {
+  const i = YOLK_STATES.indexOf(doneKey) + dir;
+  if (i < 0 || i >= YOLK_STATES.length) return;
+  haptic.select();
+  setDone(YOLK_STATES[i]);
+  refreshIdle();
+}
+$('yolkDown').addEventListener('click', () => stepDone(-1));
+$('yolkUp').addEventListener('click', () => stepDone(1));
+setDone(doneKey);
 
 // ---------- State ----------
 let running = false;
@@ -109,7 +133,7 @@ function start() {
   document.body.classList.add('running');
   goBtn.hidden = true;
   resetBtn.hidden = false;
-  subEl.textContent = NAMES[val('d')].charAt(0).toUpperCase() + NAMES[val('d')].slice(1) + ', ' + SIZENAMES[sizeKey] + ' egg';
+  subEl.textContent = NAMES[doneKey].charAt(0).toUpperCase() + NAMES[doneKey].slice(1) + ', ' + SIZENAMES[sizeKey] + ' egg';
   sound.beep();
   haptic.press();
   input.touch();
@@ -174,8 +198,6 @@ goBtn.addEventListener('click', () => {
   if (done) { haptic.press(); reset(); } else if (!running) start();
 });
 resetBtn.addEventListener('click', () => { haptic.press(); reset(); });
-document.querySelectorAll('input[name="d"]').forEach((el) =>
-  el.addEventListener('change', () => { haptic.select(); refreshIdle(); }));
 altEl.addEventListener('input', refreshIdle);
 
 refreshIdle();
@@ -258,7 +280,7 @@ new ResizeObserver(() => requestAnimationFrame(placeSizer)).observe(stage);
 sizer.hidden = false;
 setSize(sizeKey);
 // Debugging in the console: __egg.skip(330) jumps 330 seconds ahead
-window.__egg = { ...world.debug, world, P, game, skip(s) { if (running) endAt -= s * 1000; } };
+window.__egg = { ...world.debug, world, P, game, yolk, skip(s) { if (running) endAt -= s * 1000; } };
 
 function applyTheme() {
   theme = { alert: cssVar('--alert') || '#C2410C', bg: cssVar('--bg') || '#E3ECEF' };
@@ -300,7 +322,8 @@ async function toggleLab() {
       testPickup() { haptic.pickup(); },
       askGyro() { input.requestPermission().then(updateTip); },
       calibrate() { input.recalibrate(); haptic.press(); },
-      resize() { setSize(sizeKey, true); }
+      resize() { setSize(sizeKey, true); },
+      yolk
     });
     lab.open();
     return;
