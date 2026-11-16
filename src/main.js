@@ -6,6 +6,7 @@ import { createGame } from './game.js';
 import { haptic, hapticDiag } from './native.js';
 import { sound, unlockAudio } from './sound.js';
 import { createYolk, YOLK_STATES } from './yolk.js';
+import { createTerrain } from './terrain.js';
 import { totalSeconds, fmt, boilTemp, altFactor, NAMES, SIZENAMES } from './timer.js';
 
 const $ = (id) => document.getElementById(id);
@@ -70,6 +71,9 @@ function stepDone(dir) {
 $('yolkDown').addEventListener('click', () => stepDone(-1));
 $('yolkUp').addEventListener('click', () => stepDone(1));
 setDone(doneKey);
+
+// Altitude: a terrain line grows out of the slider track as you drag
+const terrain = createTerrain($('terrain'), altEl, P);
 
 // ---------- State ----------
 let running = false;
@@ -285,6 +289,7 @@ window.__egg = { ...world.debug, world, P, game, yolk, skip(s) { if (running) en
 function applyTheme() {
   theme = { alert: cssVar('--alert') || '#C2410C', bg: cssVar('--bg') || '#E3ECEF' };
   world.setShadowColor(cssVar('--ink'));
+  terrain.setColor(cssVar('--muted'));
   world.game.setDotColors(P.digitColor, P.lineColor);
 }
 applyTheme();
@@ -323,7 +328,8 @@ async function toggleLab() {
       askGyro() { input.requestPermission().then(updateTip); },
       calibrate() { input.recalibrate(); haptic.press(); },
       resize() { setSize(sizeKey, true); },
-      yolk
+      yolk,
+      terrain
     });
     lab.open();
     return;

@@ -39,6 +39,19 @@ export function createLab(P, world, diag) {
   yolk.addColor(P, 'yolkSmileColor').name('farge smilende').onChange(yolkChanged);
   yolk.addColor(P, 'yolkHardColor').name('farge hard').onChange(yolkChanged);
 
+  const terr = gui.addFolder('Terreng');
+  const terrChanged = () => { saveParams(P); if (diag && diag.terrain) diag.terrain.wake(); };
+  terr.add(P, 'terrainHeight', 10, 64, 1).name('fjellhøyde (px)').onChange(terrChanged);
+  terr.add(P, 'terrainSharp', 0, 2, 0.05).name('skarphet').onChange(terrChanged);
+  terr.add(P, 'terrainOct', 1, 8, 0.5).name('detalj (oktaver)').onChange(terrChanged);
+  terr.add(P, 'terrainWidth', 0.3, 2, 0.05).name('massiv bredde').onChange(terrChanged);
+  terr.add(P, 'terrainFreq', 0.3, 3, 0.05).name('antall topper').onChange(terrChanged);
+  terr.add(P, 'terrainLag', 5, 300, 1).name('følge (lav = mer lag)').onChange(terrChanged);
+  terr.add(P, 'terrainDamp', 1, 40, 0.5).name('demping').onChange(terrChanged);
+  terr.add(P, 'terrainScroll', 0, 5, 0.1).name('gli gjennom landskap').onChange(terrChanged);
+  terr.add(P, 'terrainChaos', 0, 4, 0.1).name('kaos ved fart').onChange(terrChanged);
+  terr.add(P, 'terrainLine', 0.5, 4, 0.25).name('linjetykkelse').onChange(terrChanged);
+
   const look = gui.addFolder('Utseende');
   look.add(P, 'matchBackground').name('egg = bakgrunn').onChange(repaint);
   look.addColor(P, 'colorStart').name('farge start').onChange(repaint);

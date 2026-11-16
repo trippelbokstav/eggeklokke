@@ -51,7 +51,7 @@
   .sub { margin: 4px 0 0; font-size: .9rem; color: var(--muted); min-height: 1.2em; }
 
   /* The 3D scene */
-  #stage { position: relative; flex: 1 1 auto; min-height: 220px; touch-action: none; cursor: grab; }
+  #stage { position: relative; flex: 1 1 auto; min-height: 150px; touch-action: none; cursor: grab; }
   #stage:active { cursor: grabbing; }
   #stage .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: .9rem; }
   #stage.ready .loading { display: none; }
@@ -75,10 +75,28 @@
   .alt-head { display: flex; justify-content: space-between; align-items: baseline; }
   .alt-head strong { font-size: .9rem; }
   .alt-head output { font-weight: 800; font-variant-numeric: tabular-nums; }
-  input[type=range] { width: 100%; accent-color: var(--yolk); height: 30px; margin: 0; }
+  /* Altitude: the slider track is the ground, the terrain line rises from it (canvas behind, bottom = track) */
+  .altwrap { position: relative; padding-top: 52px; }
+  #terrain { position: absolute; left: 0; top: 0; width: 100%; height: calc(52px + 15px); pointer-events: none; display: block; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; background: transparent; position: relative;
+    width: 100%; height: 30px; margin: 0; cursor: pointer; touch-action: pan-y;
+  }
+  input[type=range]::-webkit-slider-runnable-track { height: 2px; background: var(--muted); border-radius: 1px; }
+  input[type=range]::-moz-range-track { height: 2px; background: var(--muted); border-radius: 1px; }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 24px; height: 24px; margin-top: -11px; border-radius: 50%;
+    background: var(--yolk); border: 3px solid var(--bg); box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%; background: var(--yolk); border: 3px solid var(--bg); box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+  }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.15); }
+  input[type=range]:focus-visible::-webkit-slider-thumb { outline: 3px solid var(--ink); outline-offset: 2px; }
+  input[type=range]:focus-visible::-moz-range-thumb { outline: 3px solid var(--ink); outline-offset: 2px; }
   .note { font-size: .78rem; color: var(--muted); margin: 2px 0 0; line-height: 1.35; }
 
-  .actions { display: grid; gap: 10px; margin-top: 14px; }
+  .actions { display: grid; gap: 10px; margin-top: 10px; }
   .panel button, .copybox button {
     font: inherit; font-weight: 800; font-size: 1.05rem; border: 0; border-radius: 16px; min-height: 56px; cursor: pointer;
     padding: 0 22px;
@@ -87,7 +105,7 @@
   .go { background: var(--yolk); color: var(--yolk-ink); }
   .stop { background: var(--panel); color: var(--ink); border: 2px solid var(--line); }
   .go.alarm { background: var(--alert); color: #fff; }
-  .tip { margin: 10px 0 0; font-size: .82rem; color: var(--muted); text-align: center; }
+  .tip { margin: 8px 0 0; font-size: .82rem; color: var(--muted); text-align: center; }
 
   /* Size picker: − and + on each side of the big egg, the name under it */
   .sizer { position: absolute; inset: 0; pointer-events: none; }
@@ -104,8 +122,8 @@
   .szbtn:focus-visible, .stepbtn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   /* Yolk picker: − yolk + in the panel */
   .stepper { display: grid; grid-template-columns: 52px 170px 52px; justify-content: center; align-items: center; gap: 12px; }
-  #yolkCanvas { width: 100%; height: 150px; margin: -16px 0; display: block; } /* room for the splash, overlapping a little */
-  .steplabel { margin: 0 0 14px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+  #yolkCanvas { width: 100%; height: 124px; margin: -14px 0 -10px; display: block; } /* room for the splash, overlapping a little */
+  .steplabel { margin: 0 0 8px; text-align: center; display: flex; flex-direction: column; align-items: center; }
   .steplabel strong { font-size: 1rem; font-weight: 800; }
   .steplabel small { font-size: .75rem; color: var(--muted); }
   #sizeDown { left: var(--minus-x, 14%); }
@@ -167,7 +185,10 @@
 
       <div>
         <div class="alt-head"><strong><label for="alt">Høyde over havet</label></strong><output id="altOut" for="alt">0 m</output></div>
-        <input type="range" id="alt" min="0" max="2500" step="50" value="0">
+        <div class="altwrap">
+          <canvas id="terrain" aria-hidden="true"></canvas>
+          <input type="range" id="alt" min="0" max="2500" step="50" value="0">
+        </div>
         <p class="note" id="altNote">Vannet koker ved 100 °C.</p>
       </div>
     </div>

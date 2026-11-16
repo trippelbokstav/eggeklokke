@@ -30,6 +30,18 @@ export const DEFAULT_PARAMS = {
   yolkSmileColor: '#F0AE0B',
   yolkHardColor: '#F4C84F',
 
+  // Altitude terrain: a line over the slider that grows from hills (low) to sharp mountains (2500 m)
+  terrainHeight: 50,       // pixels: how tall the highest mountain gets
+  terrainSharp: 1,         // how ridged/sharp the mountains get up high (0 = always soft hills)
+  terrainOct: 3,           // noise detail at the top (higher = more small jagged bits)
+  terrainFreq: 1,          // how many peaks across the width
+  terrainWidth: 1,         // how wide the mountain massif around the thumb is
+  terrainLag: 60,          // spring: how fast the peak follows the thumb (lower = more lag)
+  terrainDamp: 12,         // damping (lower = more swing before it lands)
+  terrainScroll: 1.5,      // how much the landscape glides past as you drag
+  terrainChaos: 1,         // how wild it gets when you drag fast
+  terrainLine: 1.5,        // line width in pixels
+
   // Look
   matchBackground: true,  // fresh egg = the page background color (colorStart is used if off)
   colorStart: '#E3ECEF',  // egg color (when matchBackground is off). The egg itself never changes color.
