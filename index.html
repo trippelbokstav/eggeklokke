@@ -41,7 +41,23 @@
     display: flex; flex-direction: column;
     padding: env(safe-area-inset-top, 0px) 18px env(safe-area-inset-bottom, 0px);
   }
-  header { position: relative; padding-top: 14px; text-align: center; }
+  header { position: relative; padding-top: 20px; min-height: 50px; text-align: center; }
+  header .sub { margin: 0; padding: 0 44px; }
+  /* Intro: the title stands alone for 2 seconds, then lifts away and the app comes in */
+  #splash {
+    position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; background: var(--bg);
+    transition: opacity .6s ease, visibility .6s;
+  }
+  #splash h1 { font-size: clamp(2.6rem, 12vw, 4rem); letter-spacing: -0.02em; animation: splashIn .7s cubic-bezier(.2, 1.4, .4, 1) both; transition: transform .6s cubic-bezier(.6, 0, .4, 1); }
+  #splash.gone { opacity: 0; visibility: hidden; }
+  #splash.gone h1 { transform: translateY(-34vh) scale(.45); }
+  /* Fade only: a transform here would shift the measured layout (the − + around the egg) */
+  .app { transition: opacity .7s ease .2s; }
+  body.intro .app { opacity: 0; }
+  @keyframes splashIn { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    #splash h1, .app { animation: none; transition: opacity .3s; transform: none !important; }
+  }
   .labbtn {
     position: absolute; left: 0; top: 10px; width: 40px; height: 40px; border: 0; border-radius: 12px;
     background: transparent; color: var(--muted); font-size: 22px; line-height: 40px; cursor: pointer; padding: 0;
@@ -122,8 +138,12 @@
   .szbtn:focus-visible, .stepbtn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   /* Yolk picker: − yolk + in the panel */
   .stepper { display: grid; grid-template-columns: 52px 170px 52px; justify-content: center; align-items: center; gap: 12px; }
-  #yolkCanvas { width: 100%; height: 124px; margin: -14px 0 -10px; display: block; } /* room for the splash, overlapping a little */
-  .steplabel { margin: 0 0 8px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+  .yolkbox { position: relative; height: 112px; }
+  #yolkCanvas { position: absolute; left: 50%; top: 50%; width: 300px; height: 216px; transform: translate(-50%, -50%); pointer-events: none; display: block; }
+  .stepbtn { position: relative; z-index: 1; }
+  .altblock { margin-bottom: 6px; } /* room for the splash, overlapping a little */
+  /* The label sits above the floating yolk, with a halo in the page color so it always reads */
+  .steplabel { position: relative; z-index: 1; text-shadow: 0 0 3px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg); margin: 0 0 8px; text-align: center; display: flex; flex-direction: column; align-items: center; }
   .steplabel strong { font-size: 1rem; font-weight: 800; }
   .steplabel small { font-size: .75rem; color: var(--muted); }
   #sizeDown { left: var(--minus-x, 14%); }
@@ -154,12 +174,13 @@
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>
 </head>
-<body>
+<body class="intro">
+<div id="splash" aria-hidden="true"><h1>Eggklokke</h1></div>
 <div id="scene"></div>
 <div class="app">
   <header>
     <button class="labbtn" id="labBtn" type="button" aria-label="Åpne eggelaben">⚙︎</button>
-    <h1>Eggklokke</h1>
+    <h1 class="sr-only">Eggklokke</h1>
     <p class="sub" id="sub">Start klokka når egget går ned i kokende vann.</p>
   </header>
 
@@ -176,14 +197,7 @@
 
   <div class="panel">
     <div class="settings">
-      <div class="stepper">
-        <button class="stepbtn" id="yolkDown" type="button" aria-label="Bløtere plomme">−</button>
-        <canvas id="yolkCanvas" aria-hidden="true"></canvas>
-        <button class="stepbtn" id="yolkUp" type="button" aria-label="Fastere plomme">+</button>
-      </div>
-      <p class="steplabel" aria-live="polite"><strong id="yolkName">Smilende</strong><small id="yolkDesc">myk, kremet plomme</small></p>
-
-      <div>
+      <div class="altblock">
         <div class="alt-head"><strong><label for="alt">Høyde over havet</label></strong><output id="altOut" for="alt">0 m</output></div>
         <div class="altwrap">
           <canvas id="terrain" aria-hidden="true"></canvas>
@@ -191,6 +205,13 @@
         </div>
         <p class="note" id="altNote">Vannet koker ved 100 °C.</p>
       </div>
+
+      <div class="stepper">
+        <button class="stepbtn" id="yolkDown" type="button" aria-label="Bløtere plomme">−</button>
+        <div class="yolkbox"><canvas id="yolkCanvas" aria-hidden="true"></canvas></div>
+        <button class="stepbtn" id="yolkUp" type="button" aria-label="Fastere plomme">+</button>
+      </div>
+      <p class="steplabel" aria-live="polite"><strong id="yolkName">Smilende</strong><small id="yolkDesc">myk, kremet plomme</small></p>
     </div>
 
     <div class="actions">

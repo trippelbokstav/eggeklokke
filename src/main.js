@@ -240,6 +240,13 @@ function floatLabel(e) {
 }
 stage.classList.add('ready');
 
+// Intro: keep the title up for 2 seconds from page start (the 3D loaded behind it), then let the app in
+setTimeout(() => {
+  $('splash').classList.add('gone');
+  document.body.classList.remove('intro');
+  setTimeout(() => $('splash').remove(), 800);
+}, Math.max(0, 2000 - performance.now()));
+
 // ---------- Size picker: − egg + ----------
 const sizer = $('sizer');
 const sizeDown = $('sizeDown');
