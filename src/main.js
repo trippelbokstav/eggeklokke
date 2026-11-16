@@ -41,7 +41,11 @@ const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyV
 const edgeColor = (p) => (p < 0.5 ? mix(P.outlineStart, P.outlineMid, p * 2) : mix(P.outlineMid, P.outlineEnd, (p - 0.5) * 2));
 
 const val = (name) => document.querySelector(`input[name="${name}"]:checked`).value;
-const currentTotal = () => totalSeconds(val('d'), val('s'), +altEl.value);
+// Egg size: picked with − and + around the big egg (the egg itself grows)
+const SIZES = ['s', 'm', 'l'];
+const SIZE_GRAMS = { s: 'under 53 g', m: '53–63 g', l: 'over 63 g' };
+let sizeKey = 'm';
+const currentTotal = () => totalSeconds(val('d'), sizeKey, +altEl.value);
 
 // ---------- State ----------
 let running = false;
@@ -105,12 +109,12 @@ function start() {
   document.body.classList.add('running');
   goBtn.hidden = true;
   resetBtn.hidden = false;
-  subEl.textContent = NAMES[val('d')].charAt(0).toUpperCase() + NAMES[val('d')].slice(1) + ', ' + SIZENAMES[val('s')] + ' egg';
+  subEl.textContent = NAMES[val('d')].charAt(0).toUpperCase() + NAMES[val('d')].slice(1) + ', ' + SIZENAMES[sizeKey] + ' egg';
   sound.beep();
   haptic.press();
   input.touch();
   input.recalibrate(); // "flat" = how you hold the phone when you press Start
-  if (world) world.setPosed(false);
+  if (world) { world.setFit(1); world.setPosed(false); }
   if (game && P.gameOn) game.start();
   scoreEl.className = 'score';
   scoreEl.textContent = '';
@@ -161,6 +165,7 @@ function reset() {
   scoreEl.className = 'score';
   scoreEl.textContent = '';
   if (world) world.setPosed(true);
+  if (world) placeSizer();
   updateTip();
   refreshIdle();
 }
@@ -169,7 +174,7 @@ goBtn.addEventListener('click', () => {
   if (done) { haptic.press(); reset(); } else if (!running) start();
 });
 resetBtn.addEventListener('click', () => { haptic.press(); reset(); });
-document.querySelectorAll('input[name="d"], input[name="s"]').forEach((el) =>
+document.querySelectorAll('input[name="d"]').forEach((el) =>
   el.addEventListener('change', () => { haptic.select(); refreshIdle(); }));
 altEl.addEventListener('input', refreshIdle);
 
@@ -208,6 +213,50 @@ function floatLabel(e) {
   setTimeout(() => el.remove(), 1000);
 }
 stage.classList.add('ready');
+
+// ---------- Size picker: − egg + ----------
+const sizer = $('sizer');
+const sizeDown = $('sizeDown');
+const sizeUp = $('sizeUp');
+const sizeScale = (k) => (k === 's' ? P.sizeSmall : k === 'l' ? P.sizeLarge : 1);
+function setSize(k, force = false) {
+  sizeKey = k;
+  const name = SIZENAMES[k];
+  $('sizeName').textContent = name.charAt(0).toUpperCase() + name.slice(1) + ' egg';
+  $('sizeGram').textContent = SIZE_GRAMS[k];
+  sizeDown.disabled = k === 's';
+  sizeUp.disabled = k === 'l';
+  world.setSize(sizeScale(k), force);
+  placeSizer();
+  refreshIdle();
+}
+// Put the buttons beside the resting egg and the name under it (in stage pixels)
+function placeSizer() {
+  const r = stage.getBoundingClientRect();
+  // Fit: the largest egg plus the name under it must fit in the stage
+  let p = world.poseScreen();
+  const room = r.height / 2 - 52;                         // from the egg's middle down to the name
+  world.setFit(Math.min(1, room / (P.eggLength * P.sizeLarge / 2 * p.ppu)) || 1);
+  p = world.poseScreen();
+  const fit = (p.bottom - p.y) / (P.eggLength * sizeScale(sizeKey) / 2 * p.ppu);
+  const half = P.eggWidth * P.sizeLarge / 2 * fit * p.ppu; // half width of a large egg, in pixels
+  const gap = Math.min(half + 46, (r.width / 2) - 30);
+  sizer.style.setProperty('--egg-y', (p.y - r.top) + 'px');
+  sizer.style.setProperty('--minus-x', (p.x - r.left - gap) + 'px');
+  sizer.style.setProperty('--plus-x', (p.x - r.left + gap) + 'px');
+  sizer.style.setProperty('--label-y', (p.bottom - r.top + 10) + 'px');
+}
+function stepSize(dir) {
+  const i = SIZES.indexOf(sizeKey) + dir;
+  if (i < 0 || i >= SIZES.length) return;
+  haptic.select();
+  setSize(SIZES[i]);
+}
+sizeDown.addEventListener('click', () => stepSize(-1));
+sizeUp.addEventListener('click', () => stepSize(1));
+new ResizeObserver(() => requestAnimationFrame(placeSizer)).observe(stage);
+sizer.hidden = false;
+setSize(sizeKey);
 // Debugging in the console: __egg.skip(330) jumps 330 seconds ahead
 window.__egg = { ...world.debug, world, P, game, skip(s) { if (running) endAt -= s * 1000; } };
 
@@ -250,7 +299,8 @@ async function toggleLab() {
       testHeavy() { haptic.test('heavy'); },
       testPickup() { haptic.pickup(); },
       askGyro() { input.requestPermission().then(updateTip); },
-      calibrate() { input.recalibrate(); haptic.press(); }
+      calibrate() { input.recalibrate(); haptic.press(); },
+      resize() { setSize(sizeKey, true); }
     });
     lab.open();
     return;

@@ -6,6 +6,12 @@ export const DEFAULT_PARAMS = {
   eggWidth: 2.18,
   eggPointy: 0.11,        // how much fatter the blunt end is
 
+  // Egg size picker (− egg +): the big egg itself grows and shrinks, and you play with that size
+  sizeSmall: 0.84,        // scale of a small egg (medium = 1)
+  sizeLarge: 1.16,        // scale of a large egg
+  sizeStiff: 260,         // spring stiffness (higher = snappier)
+  sizeDamp: 12,           // spring damping (lower = more wobble/overshoot)
+
   // Look
   matchBackground: true,  // fresh egg = the page background color (colorStart is used if off)
   colorStart: '#E3ECEF',  // egg color (when matchBackground is off). The egg itself never changes color.

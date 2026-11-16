@@ -147,7 +147,7 @@ export function createGame(world, P, hooks) {
       }
       if (now - target.at < 300) return; // a fresh egg can't be taken the same instant it appears
       // Roll well over it: the big egg's middle must come close, the edge is not enough
-      if (dist(world.eggPos(), target) < P.pickup * P.eggWidth / 2) pick(now);
+      if (dist(world.eggPos(), target) < P.pickup * P.eggWidth * world.eggScale() / 2) pick(now);
     },
     // The egg hit a wall: lose points (one bounce sequence counts once)
     bump(now) {

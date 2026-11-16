@@ -88,8 +88,28 @@
   .go.alarm { background: var(--alert); color: #fff; }
   .tip { margin: 10px 0 0; font-size: .82rem; color: var(--muted); text-align: center; }
 
+  /* Size picker: − and + on each side of the big egg, the name under it */
+  .sizer { position: absolute; inset: 0; pointer-events: none; }
+  .szbtn {
+    position: absolute; top: var(--egg-y, 50%); transform: translate(-50%, -50%);
+    width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--line); background: var(--panel);
+    color: var(--ink); font-family: inherit; font-size: 30px; font-weight: 700; line-height: 1; padding: 0 0 3px; cursor: pointer; pointer-events: auto;
+    transition: opacity .2s, transform .12s;
+  }
+  .szbtn:active { transform: translate(-50%, -50%) scale(.9); background: var(--track); }
+  .szbtn:disabled { opacity: .3; cursor: default; }
+  .szbtn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  #sizeDown { left: var(--minus-x, 14%); }
+  #sizeUp { left: var(--plus-x, 86%); }
+  .szlabel {
+    position: absolute; left: 0; right: 0; top: var(--label-y, 85%); margin: 0; text-align: center;
+    display: flex; flex-direction: column; align-items: center; transition: top .3s cubic-bezier(.3, 1.4, .5, 1);
+  }
+  .szlabel strong { font-size: 1rem; font-weight: 800; }
+  .szlabel small { font-size: .75rem; color: var(--muted); }
+
   /* While the egg boils: hide the settings, give the egg the room */
-  body.running .settings, body.done .settings { display: none; }
+  body.running .settings, body.done .settings, body.running .sizer, body.done .sizer { display: none; }
 
   .fps { position: fixed; left: 8px; top: calc(env(safe-area-inset-top, 0px) + 6px); font: 600 11px/1.2 ui-monospace, monospace; background: rgba(0,0,0,.6); color: #fff; padding: 3px 6px; border-radius: 6px; z-index: 9; pointer-events: none; }
   /* Lab (?lab) */
@@ -118,6 +138,11 @@
 
   <div id="stage" aria-label="Egget, som du kan rulle rundt på skjermen">
     <div class="loading">Varmer opp vannet …</div>
+    <div class="sizer" id="sizer" hidden>
+      <button class="szbtn" id="sizeDown" type="button" aria-label="Mindre egg">−</button>
+      <button class="szbtn" id="sizeUp" type="button" aria-label="Større egg">+</button>
+      <p class="szlabel" aria-live="polite"><strong id="sizeName">Medium egg</strong><small id="sizeGram">53–63 g</small></p>
+    </div>
   </div>
   <div class="sr-only" role="timer" id="srTime"></div>
   <div class="score" id="score" aria-live="polite"></div>
@@ -130,15 +155,6 @@
           <input type="radio" name="d" id="d-soft" value="soft" checked><label for="d-soft">Bløtkokt<small>rennende plomme</small></label>
           <input type="radio" name="d" id="d-smile" value="smile"><label for="d-smile">Smilende<small>myk, kremet plomme</small></label>
           <input type="radio" name="d" id="d-hard" value="hard"><label for="d-hard">Hardkokt<small>fast plomme</small></label>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Størrelse</legend>
-        <div class="seg">
-          <input type="radio" name="s" id="s-s" value="s"><label for="s-s">Lite<small>under 53 g</small></label>
-          <input type="radio" name="s" id="s-m" value="m" checked><label for="s-m">Medium<small>53–63 g</small></label>
-          <input type="radio" name="s" id="s-l" value="l"><label for="s-l">Stort<small>over 63 g</small></label>
         </div>
       </fieldset>
 
