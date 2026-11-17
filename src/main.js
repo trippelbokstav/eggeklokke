@@ -268,12 +268,12 @@ function setSize(k, force = false) {
 function placeSizer() {
   world.relayout(); // make sure the resting spot matches the layout right now
   const r = stage.getBoundingClientRect();
-  // Fit: the largest egg must fit between the altitude (top) and the yolk (bottom), with its name under it
+  // Fit: the largest egg must fit between the altitude (top) and the yolk (bottom), with its name above it
   let p = world.poseScreen();
   const top = document.querySelector('header').getBoundingClientRect().bottom;
   const bottom = $('panel').getBoundingClientRect().top - 20; // the floating yolk reaches up a bit
   const halfL = P.eggLength * P.sizeLarge / 2 * p.ppu;
-  const room = Math.min(p.y - top - 10, bottom - p.y - 46);
+  const room = Math.min(p.y - top - 52, bottom - p.y - 6); // room above for the name and some air under the slider
   world.setFit(Math.max(0.3, Math.min(1, room / halfL)) || 1);
   p = world.poseScreen();
   const fit = (p.bottom - p.y) / (P.eggLength * sizeScale(sizeKey) / 2 * p.ppu);
@@ -284,7 +284,8 @@ function placeSizer() {
   sizer.style.setProperty('--egg-y', (p.y - r.top) + 'px');
   sizer.style.setProperty('--minus-x', (p.x - r.left - gap) + 'px');
   sizer.style.setProperty('--plus-x', (p.x - r.left + gap) + 'px');
-  sizer.style.setProperty('--label-y', (p.bottom - r.top + 10) + 'px');
+  const eggTop = 2 * p.y - p.bottom; // the egg is symmetric around its middle
+  sizer.style.setProperty('--label-y', (eggTop - r.top - 30) + 'px');
 }
 function stepSize(dir) {
   const i = SIZES.indexOf(sizeKey) + dir;

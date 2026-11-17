@@ -16,6 +16,7 @@ export function createLab(P, world, diag) {
   shape.add(P, 'eggLength', 1, 4.5, 0.05).name('lengde').onChange(reshaped);
   shape.add(P, 'eggWidth', 0.6, 3.5, 0.05).name('bredde').onChange(reshaped);
   shape.add(P, 'eggPointy', 0, 0.3, 0.01).name('spiss ende').onChange(reshaped);
+  shape.add(P, 'poseLift', -0.1, 0.2, 0.005).name('løft egget').onChange(() => { saveParams(P); diag && diag.resize && diag.resize(); });
   shape.add(P, 'sizeSmall', 0.5, 1, 0.01).name('lite egg (skala)').onChange(() => { saveParams(P); diag && diag.resize && diag.resize(); });
   shape.add(P, 'sizeLarge', 1, 1.6, 0.01).name('stort egg (skala)').onChange(() => { saveParams(P); diag && diag.resize && diag.resize(); });
   shape.add(P, 'sizeStiff', 40, 800, 5).name('størrelse spring').onChange(repaint);

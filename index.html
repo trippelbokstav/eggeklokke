@@ -138,6 +138,9 @@
   .go.alarm { color: var(--alert); }
   .stop { color: var(--muted); }
   .go:active, .stop:active { opacity: .6; }
+  .go:not(.alarm) { animation: breathe 2.6s ease-in-out infinite; }
+  @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: .78; } }
+  @media (prefers-reduced-motion: reduce) { .go:not(.alarm) { animation: none; } }
   .tip { margin: 8px 0 0; font-size: .82rem; color: var(--muted); text-align: center; }
 
   /* Size picker: − and + on each side of the big egg, the name under it */
@@ -155,14 +158,14 @@
   .szbtn:focus-visible, .stepbtn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   /* Yolk picker: − yolk + in the panel */
   .stepper { display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; gap: 12px; width: var(--row-w); max-width: 100%; margin: 0 auto; }
-  .yolkbox { position: relative; height: 84px; }
-  #yolkCanvas { position: absolute; left: 50%; top: 50%; width: 240px; height: 124px; transform: translate(-50%, -50%); pointer-events: none; display: block; }
+  .yolkbox { position: relative; height: 74px; }
+  #yolkCanvas { position: absolute; left: 50%; top: 50%; width: 220px; height: 108px; transform: translate(-50%, -50%); pointer-events: none; display: block; }
   .stepbtn { position: relative; z-index: 1; }
   .altblock { margin: 0 auto; width: var(--row-w); max-width: 100%; }
   /* While setting the timer there is no need for the hint under Start */
   body:not(.running):not(.done) .tip { display: none; } /* room for the splash, overlapping a little */
   /* The label sits above the floating yolk, with a halo in the page color so it always reads */
-  .steplabel { position: relative; z-index: 1; text-shadow: 0 0 3px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg); margin: 0 0 8px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+  .steplabel { position: relative; z-index: 1; text-shadow: 0 0 3px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg); margin: 0 0 2px; text-align: center; display: flex; flex-direction: column; align-items: center; }
   .steplabel strong { font-size: 1rem; font-weight: 800; }
   #sizeDown { left: var(--minus-x, 14%); }
   #sizeUp { left: var(--plus-x, 86%); }
@@ -226,12 +229,12 @@
 
   <div class="panel" id="panel">
     <div class="settings">
+      <p class="steplabel" aria-live="polite"><strong id="yolkName">Smilende</strong></p>
       <div class="stepper">
         <button class="stepbtn" id="yolkDown" type="button" aria-label="Bløtere plomme">−</button>
         <div class="yolkbox"><canvas id="yolkCanvas" aria-hidden="true"></canvas></div>
         <button class="stepbtn" id="yolkUp" type="button" aria-label="Fastere plomme">+</button>
       </div>
-      <p class="steplabel" aria-live="polite"><strong id="yolkName">Smilende</strong></p>
     </div>
 
     <div class="actions">

@@ -6,6 +6,8 @@ export const DEFAULT_PARAMS = {
   eggWidth: 2.18,
   eggPointy: 0.11,        // how much fatter the blunt end is
 
+  poseLift: 0.03,         // the resting egg sits this far above the screen middle (share of the height)
+
   // Egg size picker (− egg +): the big egg itself grows and shrinks, and you play with that size
   sizeSmall: 0.84,        // scale of a small egg (medium = 1)
   sizeLarge: 1.16,        // scale of a large egg
