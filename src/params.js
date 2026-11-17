@@ -7,10 +7,10 @@ export const DEFAULT_PARAMS = {
   eggPointy: 0.11,        // how much fatter the blunt end is
 
   // Placement on the setup screen (pixels, + = down). The egg is lifted (+ = up).
-  eggLift: 75,            // the resting egg sits this far above the screen middle
-  posAlt: -25,              // altitude block (label, mountains, slider)
+  eggLift: 45,            // the resting egg sits this far above the screen middle
+  posAlt: 5,              // altitude block (label, mountains, slider)
   altWidth: 290,          // width of the altitude slider and mountains (pixels)
-  posYolk: -85,             // yolk row (yolk, − +, its name)
+  posYolk: -55,             // yolk row (yolk, − +, its name)
   posStart: -45,            // Start
   // Text (pixels, + = down)
   txtAlt: 35,              // altitude heading (label / number / info line)
@@ -35,9 +35,9 @@ export const DEFAULT_PARAMS = {
   yolkLobe: 0.85,          // how far the soft yolk splashes out (5 lobes)
   yolkWaist: 0.62,        // soft: how far in the gaps between the lobes go (lower = deeper)
   yolkSmile: 0.6,          // smiling: 0 = plain circle, 1 = full crooked smile
-  yolkSoftColor: '#F29A0E',
-  yolkSmileColor: '#F0AE0B',
-  yolkHardColor: '#F4C84F',
+  yolkSoftColor: '#E2560B',
+  yolkSmileColor: '#F07C10',
+  yolkHardColor: '#F7A743',
 
   // Altitude terrain: a line over the slider that grows from hills (low) to sharp mountains (2500 m)
   terrainHeight: 72,       // pixels: how tall the highest mountain gets
@@ -53,11 +53,11 @@ export const DEFAULT_PARAMS = {
 
   // Look
   matchBackground: true,  // fresh egg = the page background color (colorStart is used if off)
-  colorStart: '#E3ECEF',  // egg color (when matchBackground is off). The egg itself never changes color.
-  lineColor: '#A9C8DA',   // outline while setting the timer, and the dots
+  colorStart: '#FFE49A',  // egg color (when matchBackground is off). The egg itself never changes color.
+  lineColor: '#E2B341',   // outline while setting the timer, and the dots
   // While boiling, the outline steps every 30 s: white -> yellow -> red
   outlineStart: '#FFFFFF',
-  outlineMid: '#F0AE0B',
+  outlineMid: '#F07C10',
   outlineEnd: '#D9372B',
   pulse: 1.2,             // how much the outline swells on the beeps at the end
   dotCount: 400,
@@ -65,7 +65,7 @@ export const DEFAULT_PARAMS = {
   dotStrength: 0.2,       // 0 = invisible, 1 = full line color
   rough: 0.5,             // bumpy surface
   shade: 0.15,            // how dark the shadow side of the egg is (0 = completely flat)
-  digitColor: '#F0AE0B',
+  digitColor: '#E0680A',
   digitSize: 115,
   digitRepeat: 1,         // how many times the time is painted around the egg
   outline: 0.03,          // 0 = no outline
@@ -99,7 +99,7 @@ export const DEFAULT_PARAMS = {
   miniScale: 0.22,         // size of the small eggs compared with the big one
   pickup: 0.8,           // how close the big egg's middle must come (0 = dead center, 1 = edge touch)
   comboSec: 4,            // seconds per small egg to keep the streak (its countdown: yellow -> orange -> red)
-  miniOrange: '#F07C1E',  // middle color of the countdown (start = digitColor, end = outlineEnd, expired = lineColor)
+  miniOrange: '#E2470B',  // middle color of the countdown (start = digitColor, end = outlineEnd, expired = lineColor)
   ticks: false,           // tick sound during the countdown (small vibrations in red are always on)
   spotInset: 0.12,        // keep small eggs this far in from the screen edges (fraction of the area on each side)
   bumpPenalty: 1,         // points lost per wall bump while playing (0 = no penalty)
@@ -113,7 +113,7 @@ export const DEFAULT_PARAMS = {
   alarmJump: 0.8
 };
 
-const STORE_KEY = 'eggeklokke-lab-v8'; // bump when defaults change, so old lab values don't override them
+const STORE_KEY = 'eggeklokke-lab-v9'; // bump when defaults change, so old lab values don't override them
 
 export function loadParams(useStored) {
   const params = { ...DEFAULT_PARAMS };
