@@ -189,6 +189,7 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
   // Egg size (small / medium / large): a scale that springs to its target, with a little overshoot
   const size = { now: 1, vel: 0, target: 1, fit: 1 };
   let liftCut = 0; // pixels taken off P.eggLift when there is no room up there (set from the UI)
+  let tourShift = 0; // pixels the resting egg is moved down during the intro tour
   // fit: extra shrink while you set the timer, so even a large egg fits between the title and the panel
   const shown = () => size.target * size.fit;
 
@@ -400,7 +401,7 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
     const c = container.getBoundingClientRect();
     posePos.x = (((r.left + r.width / 2) - c.left) / w * 2 - 1) * hx;
     // eggLift: rest a bit above the middle (pixels)
-    posePos.z = (((r.top + r.height / 2 - Math.max(0, P.eggLift - liftCut)) - c.top) / h * 2 - 1) * hz;
+    posePos.z = (((r.top + r.height / 2 - Math.max(0, P.eggLift - liftCut) + tourShift) - c.top) / h * 2 - 1) * hz;
   }
   const ro = new ResizeObserver(resize);
   ro.observe(container);
@@ -524,6 +525,10 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
     setFit(f) { size.fit = f; },
     // Take this many pixels off the egg's lift (keeps its name clear of the block above)
     setLiftCut(px) { if (px !== liftCut) { liftCut = px; resize(); } },
+    // Intro tour: move the resting egg (it glides there), hide/show it, and let it pop in from nothing
+    setTourShift(px) { if (px !== tourShift) { tourShift = px; resize(); } },
+    setEggVisible(v) { egg.visible = v; shadow.visible = v && P.shadowOpacity > 0; dirty = true; },
+    popIn() { size.now = 0.02; size.vel = 0; dirty = true; },
     // The resting egg on screen, in pixels: center, and how far down its bottom end reaches (at the target size)
     poseScreen() {
       const c = api.game.project(posePos.x, posePos.z);

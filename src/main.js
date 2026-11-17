@@ -63,11 +63,11 @@ const currentTotal = () => totalSeconds(doneKey, sizeKey, +altEl.value);
 // Yolk: picked with − and + around a morphing yolk (soft / smiling / hard)
 let doneKey = YOLK_STATES.includes(S.done) ? S.done : 'smile';
 const yolk = createYolk($('yolkCanvas'), P);
-function setDone(k) {
+function setDone(k, save = true) {
   doneKey = k;
   yolk.set(k);
   $('yolkName').textContent = t(k);
-  if (S.done !== k) { S.done = k; saveSettings(S); }
+  if (save && S.done !== k) { S.done = k; saveSettings(S); }
   $('yolkDown').disabled = k === 'soft';
   $('yolkUp').disabled = k === 'hard';
 }
@@ -318,17 +318,145 @@ stage.classList.add('ready');
 // The display font (Sniglet) loads from the web: repaint the egg's time once it is there
 if (document.fonts) Promise.all([document.fonts.load('800 100px Sniglet'), document.fonts.load('700 100px Comfortaa')]).then(() => { fontReady(); world.invalidate(); }).catch(() => {});
 
-// Intro: the title stands for 2.5 s from page start (the 3D loads behind it), fades all the way out,
-// and only then does the app fade up
-setTimeout(() => {
+// ---------- Intro: the title, then a quick tour of the parts ----------
+// The title stands for 1.5 s (the 3D loads behind it) and fades out. Then the tour shows the parts one by one,
+// centered on the screen: the altitude slider runs 2500 → home, the egg pops in and steps small/medium/large,
+// the yolk joins and steps hard/jammy/soft. "Start klokka" comes 3 s after everything has landed.
+// A tap anywhere skips straight to the main view.
+let touring = true;
+let tourDone = false;
+const tourTimers = [];
+const wait = (ms) => new Promise((res) => tourTimers.push(setTimeout(res, ms)));
+const hideEls = () => [document.querySelector('.szlabel'), sizeDown, sizeUp, $('eggStart'), document.querySelector('.stepper'), document.querySelector('.steplabel')];
+const showEl = (el) => el && el.classList.remove('thide');
+function setTourAlt(px) { document.documentElement.style.setProperty('--tour-alt', px + 'px'); }
+function setAlt(v, phase) {
+  altEl.value = v;
+  altEl.dispatchEvent(new Event(phase));
+}
+
+function endSplash() {
+  const sp = $('splash');
+  if (!sp) return;
+  sp.classList.add('gone');
+  document.body.classList.remove('intro');
+  setTimeout(() => sp.remove(), 700);
+}
+
+function finishTour() {
+  if (tourDone) return;
+  tourDone = true;
+  tourTimers.forEach(clearTimeout);
+  touring = false;
+  endSplash();
+  setTourAlt(0);
+  world.setTourShift(0);
+  world.setEggVisible(true);
+  hideEls().forEach(showEl);
+  setAlt(S.home, 'input');
+  setAlt(S.home, 'change');
+  setSize(S.size, false, false);
+  setDone(S.done, false);
+  placeSizer();
+  document.removeEventListener('click', skipTour, true);
+}
+function skipTour(e) {
+  if (tourDone) return;
+  e.preventDefault();
+  e.stopPropagation();
+  finishTour();
+}
+
+async function runTour() {
+  document.addEventListener('click', skipTour, true);
+  hideEls().forEach((el) => el && el.classList.add('thide'));
+  world.setEggVisible(false);
+  setAlt(2500, 'input');
+  await wait(Math.max(0, 1500 - performance.now()));
+  if (tourDone) return;
   $('splash').classList.add('textout');
-  setTimeout(() => {
-    $('splash').classList.add('gone');
-    placeSizer();
-    document.body.classList.remove('intro');
-    setTimeout(() => $('splash').remove(), 700);
-  }, 550);
-}, Math.max(0, 2500 - performance.now()));
+  await wait(550);
+  if (tourDone) return;
+  endSplash();
+
+  const mid = innerHeight / 2;
+  const rect = (el) => el.getBoundingClientRect();
+  const alt = document.querySelector('.altblock');
+  // 1) Altitude alone, centered: the slider runs from 2500 down to your home altitude
+  const a = rect(alt);
+  setTourAlt(mid - (a.top + a.bottom) / 2);
+  await wait(250);
+  const from = 2500;
+  const to = S.home;
+  const t0 = performance.now();
+  await new Promise((res) => {
+    const tick = (now) => {
+      if (tourDone) return res();
+      const k = Math.min(1, (now - t0) / 1500);
+      const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; // ease in-out
+      setAlt(Math.round((from + (to - from) * e) / 50) * 50, 'input');
+      if (k < 1) requestAnimationFrame(tick); else res();
+    };
+    requestAnimationFrame(tick);
+  });
+  if (tourDone) return;
+  setAlt(to, 'change');
+  await wait(250);
+  if (tourDone) return;
+
+  // 2) The egg joins: altitude + egg centered together. It steps small, medium, large, then your size.
+  const p = world.poseScreen();
+  const eggTop = 2 * p.y - p.bottom - 34;
+  const groupMid = (a.top + p.bottom) / 2;
+  const shift = mid - groupMid;
+  // The large egg is taller: give the altitude block room for it, so "Large egg" stays clear of the slider
+  const half = p.bottom - p.y;
+  const extra = half * (P.sizeLarge / sizeScale(sizeKey) - 1) + 10;
+  setTourAlt(shift - extra);
+  world.setTourShift(shift);
+  await wait(300); // let the altitude block move first, then the egg pops in
+  if (tourDone) return;
+  setSize('s', false, false);
+  world.setEggVisible(true);
+  world.popIn();
+  placeSizer();
+  showEl(document.querySelector('.szlabel'));
+  for (const k of ['m', 'l', S.size]) {
+    await wait(380);
+    if (tourDone) return;
+    setSize(k, false, false);
+  }
+  await wait(300);
+  if (tourDone) return;
+  showEl(sizeDown);
+  showEl(sizeUp);
+  await wait(350);
+  if (tourDone) return;
+
+  // 3) The yolk joins: everything in its normal place. Hard, jammy, soft, then your yolk.
+  setTourAlt(0);
+  world.setTourShift(0);
+  placeSizer();
+  setDone('hard', false);
+  showEl(document.querySelector('.steplabel'));
+  showEl(document.querySelector('.stepper'));
+  for (const k of ['smile', 'soft', S.done]) {
+    await wait(420);
+    if (tourDone) return;
+    setDone(k, false);
+  }
+  await wait(450);
+  if (tourDone) return;
+  // (the yolk's − + are inside the stepper row; they come with it)
+  touring = false;
+  placeSizer();
+  // 4) "Start klokka" 3 s after everything has landed
+  await wait(3000);
+  if (tourDone) return;
+  showEl($('eggStart'));
+  tourDone = true;
+  document.removeEventListener('click', skipTour, true);
+}
 
 // ---------- Size picker: − egg + ----------
 const sizer = $('sizer');
@@ -336,10 +464,10 @@ const sizeDown = $('sizeDown');
 const sizeUp = $('sizeUp');
 const SIZE_KEY = { s: 'sizeS', m: 'sizeM', l: 'sizeL' };
 const sizeScale = (k) => (k === 's' ? P.sizeSmall : k === 'l' ? P.sizeLarge : 1);
-function setSize(k, force = false) {
+function setSize(k, force = false, save = true) {
   sizeKey = k;
   $('sizeName').textContent = t(SIZE_KEY[k]);
-  if (S.size !== k) { S.size = k; saveSettings(S); }
+  if (save && S.size !== k) { S.size = k; saveSettings(S); }
   sizeDown.disabled = k === 's';
   sizeUp.disabled = k === 'l';
   world.setSize(sizeScale(k), force);
@@ -359,11 +487,15 @@ function placeSizer() {
   const room = (bottom - top) / 2 - 66; // half the free space, minus room for the name above the egg
   world.setFit(Math.max(0.3, Math.min(1, room / halfL)) || 1);
   // Lift as asked, but never so high that the egg's name runs into the altitude block (then it sits lower)
-  world.setLiftCut(0);
+  // (Not during the intro tour: the blocks are moved around then, the cut from the real layout stays.)
+  if (!touring) {
+    world.setLiftCut(0);
+    p = world.poseScreen();
+    const nameTop = (2 * p.y - p.bottom) - 30 + P.txtEgg;
+    const altBottom = document.querySelector('.altblock').getBoundingClientRect().bottom + 6;
+    if (nameTop < altBottom) { world.setLiftCut(altBottom - nameTop); p = world.poseScreen(); }
+  }
   p = world.poseScreen();
-  const nameTop = (2 * p.y - p.bottom) - 30 + P.txtEgg;
-  const altBottom = document.querySelector('.altblock').getBoundingClientRect().bottom + 6;
-  if (nameTop < altBottom) { world.setLiftCut(altBottom - nameTop); p = world.poseScreen(); }
   const fit = (p.bottom - p.y) / (P.eggLength * sizeScale(sizeKey) / 2 * p.ppu);
   const half = P.eggWidth * P.sizeLarge / 2 * fit * p.ppu; // half width of a large egg, in pixels
   // Same column as the yolk row and the altitude: button centers at half the row width minus half a button
@@ -402,6 +534,7 @@ function applyLayout() {
 }
 applyLayout();
 setSize(sizeKey);
+runTour();
 // Debugging in the console: __egg.skip(330) jumps 330 seconds ahead
 window.__egg = { ...world.debug, world, P, game, yolk, skip(s) { if (running) endAt -= s * 1000; } };
 

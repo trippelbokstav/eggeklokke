@@ -214,7 +214,10 @@
     color: var(--ink); font-family: inherit; font-size: 36px; font-weight: 500; line-height: 1; padding: 0 0 4px; cursor: pointer; pointer-events: auto;
     transition: opacity .2s, transform .12s;
   }
-  .szbtn { position: absolute; top: var(--egg-y, 50%); transform: translate(-50%, -50%); }
+  .szbtn { position: absolute; top: var(--egg-y, 50%); transform: translate(-50%, -50%); transition: opacity .35s, transform .12s, top .35s cubic-bezier(.3, 1.1, .4, 1); }
+  /* Intro tour: parts are hidden until their turn (beats the breathing animation on "Start klokka") */
+  .thide { opacity: 0 !important; pointer-events: none !important; }
+  .szlabel, .egg-start, .stepper, .steplabel { transition: opacity .35s ease, top .35s cubic-bezier(.3, 1.1, .4, 1); }
   .szbtn:active { transform: translate(-50%, -50%) scale(.85); opacity: .6; }
   .panel .stepbtn { min-height: 0; padding: 0 0 4px; border-radius: 12px; font-size: 36px; font-weight: 500; background: transparent; color: var(--ink); }
   .stepbtn:active { transform: scale(.85); opacity: .6; }
@@ -225,7 +228,7 @@
   .yolkbox { position: relative; height: 74px; }
   #yolkCanvas { position: absolute; left: 50%; top: 50%; width: 220px; height: 108px; transform: translate(-50%, -50%); pointer-events: none; display: block; }
   .stepbtn { position: relative; z-index: 1; }
-  .altblock { margin: 0 auto; width: var(--alt-w, 290px); max-width: 100%; transform: translateY(var(--pos-alt, 0px)); }
+  .altblock { margin: 0 auto; width: var(--alt-w, 290px); max-width: 100%; transform: translateY(calc(var(--pos-alt, 0px) + var(--tour-alt, 0px))); transition: transform .45s cubic-bezier(.3, 1.1, .4, 1); }
   /* While setting the timer there is no need for the hint under Start */
   body:not(.running):not(.done) .tip { display: none; } /* room for the splash, overlapping a little */
   /* The label sits above the floating yolk, with a halo in the page color so it always reads */
@@ -235,7 +238,7 @@
   #sizeUp { left: var(--plus-x, 86%); }
   .szlabel {
     position: absolute; left: 0; right: 0; top: var(--label-y, 85%); margin: 0; text-align: center;
-    display: flex; flex-direction: column; align-items: center; transition: top .3s cubic-bezier(.3, 1.4, .5, 1);
+    display: flex; flex-direction: column; align-items: center; transition: opacity .35s ease, top .3s cubic-bezier(.3, 1.4, .5, 1);
   }
   .szlabel strong { font-size: 1rem; font-weight: 800; }
 
