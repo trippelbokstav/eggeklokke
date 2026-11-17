@@ -396,6 +396,14 @@ async function runTour() {
   const titleTop = titleBottom - titleH;
   const placeTitle = (bottomY) => title.style.setProperty('--tt-y', bottomY + 'px');
 
+  // Park the (still hidden) altitude block at its centered spot right away, without a glide,
+  // so it never slides through the title on its way in
+  const shift1 = mid - (titleTop + a.bottom) / 2;
+  alt.style.transition = 'none';
+  setTourAlt(shift1);
+  alt.getBoundingClientRect(); // apply now
+  alt.style.transition = '';
+
   // 0) The title alone, in the middle of the screen
   placeTitle(mid + titleH / 2);
   endSplash();
@@ -404,9 +412,9 @@ async function runTour() {
   if (tourDone) return;
 
   // 1) The altitude joins under the title, both centered. The slider runs from 2500 down to 0.
-  const shift1 = mid - (titleTop + a.bottom) / 2;
-  setTourAlt(shift1);
   placeTitle(titleBottom + shift1);
+  await wait(500); // the title glides up first, then the altitude fades in under it
+  if (tourDone) return;
   showEl(alt);
   await wait(600);
   if (tourDone) return;
