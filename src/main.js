@@ -1,4 +1,4 @@
-// Eggklokke 2: the clock is painted on an egg you can roll around while it boils
+// Trillekok: the clock is painted on an egg you can roll around while it boils
 import { loadParams } from './params.js';
 import { createWorld } from './world.js';
 import { fontReady } from './eggTexture.js';
