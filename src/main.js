@@ -327,7 +327,7 @@ let touring = true;
 let tourDone = false;
 const tourTimers = [];
 const wait = (ms) => new Promise((res) => tourTimers.push(setTimeout(res, ms)));
-const hideEls = () => [document.querySelector('.szlabel'), sizeDown, sizeUp, $('eggStart'), document.querySelector('.stepper'), document.querySelector('.steplabel')];
+const hideEls = () => [document.querySelector('.altblock'), document.querySelector('.szlabel'), sizeDown, sizeUp, $('eggStart'), document.querySelector('.stepper'), document.querySelector('.steplabel'), $('yolkDown'), $('yolkUp')];
 const showEl = (el) => el && el.classList.remove('thide');
 function setTourAlt(px) { document.documentElement.style.setProperty('--tour-alt', px + 'px'); }
 function setAlt(v, phase) {
@@ -385,13 +385,19 @@ async function runTour() {
   const titleTop = titleBottom - titleH;
   const placeTitle = (bottomY) => title.style.setProperty('--tt-y', bottomY + 'px');
 
-  // 1) The title and the altitude together, centered. The slider runs from 2500 down to your home altitude.
+  // 0) The title alone, in the middle of the screen
+  placeTitle(mid + titleH / 2);
+  endSplash();
+  title.classList.add('show');
+  await wait(1300);
+  if (tourDone) return;
+
+  // 1) The altitude joins under the title, both centered. The slider runs from 2500 down to 0.
   const shift1 = mid - (titleTop + a.bottom) / 2;
   setTourAlt(shift1);
   placeTitle(titleBottom + shift1);
-  endSplash();
-  title.classList.add('show');
-  await wait(500);
+  showEl(alt);
+  await wait(600);
   if (tourDone) return;
   // The tour always shows the same story (2500 m -> 0 m, small -> medium, soft -> jammy);
   // your own settings pop into place once everything has landed
@@ -425,6 +431,7 @@ async function runTour() {
   await wait(350); // the blocks move first, then the egg pops in
   if (tourDone) return;
   setSize('s', false, false);
+  world.snapToPose();
   world.setEggVisible(true);
   world.popIn();
   placeSizer();
@@ -432,11 +439,7 @@ async function runTour() {
   await wait(900);
   if (tourDone) return;
   setSize('m', false, false);
-  await wait(700);
-  if (tourDone) return;
-  showEl(sizeDown);
-  showEl(sizeUp);
-  await wait(700);
+  await wait(900);
   if (tourDone) return;
 
   // 3) The yolk joins: everything in its normal place, the title glides out and fades. Soft, then your yolk.
@@ -452,6 +455,10 @@ async function runTour() {
   if (tourDone) return;
   setDone('smile', false);
   await wait(900);
+  if (tourDone) return;
+  // All the − + come in together, at the very end
+  [sizeDown, sizeUp, $('yolkDown'), $('yolkUp')].forEach(showEl);
+  await wait(400);
   if (tourDone) return;
   touring = false;
   // Everything has landed: your own settings pop into place

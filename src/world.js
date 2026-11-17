@@ -529,6 +529,15 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
     setTourShift(px) { if (px !== tourShift) { tourShift = px; resize(); } },
     setEggVisible(v) { egg.visible = v; shadow.visible = v && P.shadowOpacity > 0; dirty = true; },
     popIn() { size.now = 0.02; size.vel = 0; dirty = true; },
+    // Put the resting egg at its spot at once (no glide), e.g. before it pops in
+    snapToPose() {
+      eggBody.setTranslation({ x: posePos.x, y: posePos.y, z: posePos.z }, true);
+      eggBody.setRotation({ x: poseRot.x, y: poseRot.y, z: poseRot.z, w: poseRot.w }, true);
+      readBody(currPos, currRot);
+      prevPos.copy(currPos);
+      prevRot.copy(currRot);
+      dirty = true;
+    },
     // The resting egg on screen, in pixels: center, and how far down its bottom end reaches (at the target size)
     poseScreen() {
       const c = api.game.project(posePos.x, posePos.z);
