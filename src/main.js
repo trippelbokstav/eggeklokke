@@ -203,7 +203,7 @@ function start(resumeFrom = null) {
   input.touch();
   input.recalibrate(); // "flat" = how you hold the phone when you press Start
   if (world) { world.setFit(1); world.setPosed(false); }
-  if (game && P.gameOn) game.start();
+  if (game && P.gameOn && !(resumeFrom && game.resume(performance.now()))) game.start();
   scoreEl.className = 'score';
   showScore(null);
   updateTip();
@@ -239,7 +239,8 @@ function finish() {
   }
 }
 
-function reset() {
+// keepGame: Cancel with a way back pauses the game instead of ending it
+function reset(keepGame = false) {
   running = false;
   done = false;
   try { if (wake) wake.release(); } catch (e) { /* ignore */ }
@@ -250,7 +251,7 @@ function reset() {
   goBtn.classList.remove('alarm');
   resetBtn.hidden = true;
   subEl.textContent = t('introSub');
-  if (game) game.stop();
+  if (game) { if (keepGame) game.pause(); else game.stop(); }
   scoreEl.className = 'score';
   showScore(null);
   if (world) world.setPosed(true);
@@ -266,7 +267,7 @@ resetBtn.addEventListener('click', () => {
   haptic.press();
   // Cancelled in the middle of a game, maybe by mistake: keep the countdown going for 30 s with a way back
   if (running && endAt - Date.now() > 1500) undo = { endAt, total, until: Date.now() + 30000 };
-  reset();
+  reset(!!undo); // with a way back, the game is paused (score, streak and eggs kept) instead of ended
   if (undo) showUndo();
 });
 
@@ -360,6 +361,7 @@ let tipsOn = false;
 let tipTimer = null;
 let undo = null;       // { endAt, total, until } after Cancel
 let undoShownSec = null;
+let undoEndsSec = null;
 function nextTip(first = false) {
   clearTimeout(tipTimer);
   if (!tipsOn || undo) return;
@@ -382,8 +384,9 @@ function showUndo() {
   clearTimeout(tipTimer);
   undoShownSec = null;
   hintEl.classList.add('undo', 'show');
-  hintEl.innerHTML = '<span class="undo-time"></span><span class="undo-text"></span>';
+  hintEl.innerHTML = '<span class="undo-time"></span><span class="undo-text"></span><span class="undo-ends"></span>';
   hintEl.querySelector('.undo-text').textContent = t('backToTimer');
+  undoEndsSec = null;
   tickUndo();
 }
 // Called every frame: keep the countdown in the button, end the offer after 30 s (or when the time is up)
@@ -391,12 +394,20 @@ function tickUndo() {
   if (!undo) return;
   const now = Date.now();
   const left = (undo.endAt - now) / 1000;
-  if (now > undo.until || left <= 0) { clearUndo(); nextTip(true); return; }
+  // The time ran out while the way back was offered: the alarm rings anyway (Cancel may have been a mistake)
+  if (left <= 0) { const u = undo; start(u); return; }
+  if (now > undo.until) { clearUndo(); if (game) game.stop(); nextTip(true); return; }
   const sec = Math.ceil(left);
   if (sec !== undoShownSec) {
     undoShownSec = sec;
     const el = hintEl.querySelector('.undo-time');
     if (el) el.textContent = fmt(left);
+  }
+  const ends = Math.ceil((undo.until - now) / 1000);
+  if (ends !== undoEndsSec) {
+    undoEndsSec = ends;
+    const el = hintEl.querySelector('.undo-ends');
+    if (el) el.textContent = t('endsIn', { n: ends });
   }
 }
 function clearUndo() {
