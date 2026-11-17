@@ -268,14 +268,20 @@ function setSize(k, force = false) {
 function placeSizer() {
   world.relayout(); // make sure the resting spot matches the layout right now
   const r = stage.getBoundingClientRect();
-  // Fit: the largest egg must fit between the altitude (top) and the yolk (bottom), with its name above it
+  // Fit: sized from the free space in the base layout (between the altitude block and the yolk row),
+  // NOT from where things are moved to. The lab's Plassering/Tekst offsets only move things; they never resize the egg.
   let p = world.poseScreen();
-  const top = document.querySelector('.altblock').getBoundingClientRect().bottom;   // includes its offset
-  const bottom = document.querySelector('.steplabel').getBoundingClientRect().top - 20; // the floating yolk reaches up a bit
+  const top = document.querySelector('header').getBoundingClientRect().bottom; // layout boxes: not moved by the offsets
+  const bottom = $('panel').getBoundingClientRect().top;
   const halfL = P.eggLength * P.sizeLarge / 2 * p.ppu;
-  const room = Math.min(p.y - top - 52, bottom - p.y - 6); // room above for the name and some air under the slider
+  const room = (bottom - top) / 2 - 66; // half the free space, minus room for the name above the egg
   world.setFit(Math.max(0.3, Math.min(1, room / halfL)) || 1);
+  // Lift as asked, but never so high that the egg's name runs into the altitude block (then it sits lower)
+  world.setLiftCut(0);
   p = world.poseScreen();
+  const nameTop = (2 * p.y - p.bottom) - 30 + P.txtEgg;
+  const altBottom = document.querySelector('.altblock').getBoundingClientRect().bottom + 6;
+  if (nameTop < altBottom) { world.setLiftCut(altBottom - nameTop); p = world.poseScreen(); }
   const fit = (p.bottom - p.y) / (P.eggLength * sizeScale(sizeKey) / 2 * p.ppu);
   const half = P.eggWidth * P.sizeLarge / 2 * fit * p.ppu; // half width of a large egg, in pixels
   // Same column as the yolk row and the altitude: button centers at half the row width minus half a button
