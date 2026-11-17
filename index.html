@@ -115,12 +115,12 @@
   .seg3 button[aria-pressed="true"] { background: var(--yolk); border-color: var(--yolk); color: var(--bg); }
   .sheet select { font: 700 1rem var(--text); color: var(--ink); background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; }
   .sheet-note { margin: 0 0 8px; font-size: .8rem; line-height: 1.45; color: var(--muted); }
-  .vrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .vrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
   .vrow > span { font-weight: 700; font-size: .95rem; }
   .vstep { display: flex; align-items: center; gap: 4px; }
   .vstep button { width: 40px; height: 40px; border: 0; background: transparent; font-size: 24px; font-weight: 500; border-radius: 10px; }
   .vstep button:active { opacity: .5; }
-  .vstep output { min-width: 4.2em; text-align: center; font-family: var(--display); font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .vstep output { min-width: 3.6em; text-align: center; font-family: var(--display); font-weight: 800; font-size: 1.75rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .sheet-link { align-self: flex-start; border: 0; background: transparent; padding: 10px 0; font-weight: 700; font-size: .9rem; color: var(--yolk) !important; }
   .sheet-link:disabled { opacity: .35; cursor: default; }
   .sheet-list { margin: 0 0 6px; padding-left: 1.1em; font-size: .9rem; line-height: 1.6; }
@@ -150,11 +150,11 @@
   .seg input:checked + label small { color: var(--yolk-ink); opacity: .8; }
   .seg input:focus-visible + label { outline: 3px solid var(--ink); outline-offset: 2px; }
 
-  .alt-head { position: relative; height: 58px; text-align: center; transform: translateY(var(--txt-alt, 0px)); }
+  .alt-head { position: relative; height: 66px; text-align: center; transform: translateY(var(--txt-alt, 0px)); }
   .alt-head > * { position: absolute; left: 0; right: 0; transition: opacity .25s ease, transform .35s cubic-bezier(.2, 1.2, .4, 1); }
-  .alt-label { top: 14px; font-size: .9rem; font-weight: 700; color: var(--muted); }
-  .alt-head output { top: 0; font-size: 1.85rem; line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .alt-info { top: 38px; margin: 0; font-size: .78rem; color: var(--muted); }
+  .alt-label { top: 18px; font-size: .9rem; font-weight: 700; color: var(--muted); }
+  .alt-head output { top: 0; font-size: 2.3rem; line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .alt-info { top: 46px; margin: 0; font-size: .78rem; color: var(--muted); }
   .alt-head output, .alt-info { opacity: 0; }
   .alt-info { transform: translateY(8px); }
   .alt-head[data-state="drag"] .alt-label, .alt-head[data-state="rest"] .alt-label { opacity: 0; transform: translateY(-6px); }
