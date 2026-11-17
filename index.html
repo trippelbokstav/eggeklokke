@@ -106,11 +106,11 @@
   .seg input:checked + label small { color: var(--yolk-ink); opacity: .8; }
   .seg input:focus-visible + label { outline: 3px solid var(--ink); outline-offset: 2px; }
 
-  .alt-head { position: relative; height: 50px; text-align: center; transform: translateY(var(--txt-alt, 0px)); }
+  .alt-head { position: relative; height: 58px; text-align: center; transform: translateY(var(--txt-alt, 0px)); }
   .alt-head > * { position: absolute; left: 0; right: 0; transition: opacity .25s ease, transform .35s cubic-bezier(.2, 1.2, .4, 1); }
-  .alt-label { top: 10px; font-size: .9rem; font-weight: 700; color: var(--muted); }
-  .alt-head output { top: 2px; font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .alt-info { top: 30px; margin: 0; font-size: .78rem; color: var(--muted); }
+  .alt-label { top: 14px; font-size: .9rem; font-weight: 700; color: var(--muted); }
+  .alt-head output { top: 0; font-size: 1.85rem; line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .alt-info { top: 38px; margin: 0; font-size: .78rem; color: var(--muted); }
   .alt-head output, .alt-info { opacity: 0; }
   .alt-info { transform: translateY(8px); }
   .alt-head[data-state="drag"] .alt-label, .alt-head[data-state="rest"] .alt-label { opacity: 0; transform: translateY(-6px); }
