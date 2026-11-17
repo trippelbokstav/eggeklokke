@@ -84,7 +84,8 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
     c.height = 128;
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
+    // Always drawn on top: on a phone's depth buffer the flat label can otherwise hide under the egg
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
     mesh.rotation.x = -Math.PI / 2;
     mesh.rotation.z = 0;

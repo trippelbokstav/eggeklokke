@@ -65,12 +65,13 @@
     transition: opacity .6s ease, visibility .6s;
   }
   #splash h1 { font-size: clamp(2.6rem, 12vw, 4rem); letter-spacing: -0.02em; animation: splashIn .7s cubic-bezier(.2, 1.4, .4, 1) both; transition: transform .6s cubic-bezier(.6, 0, .4, 1); }
-  #splash > div { text-align: center; padding: 0 32px; }
+  #splash > div { text-align: center; padding: 0 32px; transition: opacity .5s ease; }
+  /* Step 1: the title fades all the way out. Step 2: the yellow cover fades and the app comes up. */
+  #splash.textout > div { opacity: 0; }
   #splash p { margin: 10px auto 0; max-width: 18em; color: var(--muted); font-size: 1rem; line-height: 1.4; animation: splashIn .7s ease .35s both; }
   #splash.gone { opacity: 0; visibility: hidden; }
-  #splash.gone > div { transform: translateY(-6vh); transition: transform .6s cubic-bezier(.6, 0, .4, 1); }
   /* Fade only: a transform here would shift the measured layout (the − + around the egg) */
-  .app { transition: opacity .7s ease .2s; }
+  .app { transition: opacity .6s ease; }
   body.intro .app { opacity: 0; }
   @keyframes splashIn { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) {
