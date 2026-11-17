@@ -139,7 +139,7 @@
   .stop { color: var(--muted); }
   .go:active, .stop:active { opacity: .6; }
   .go:not(.alarm) { animation: breathe 2.6s ease-in-out infinite; }
-  @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: .78; } }
+  @keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
   @media (prefers-reduced-motion: reduce) { .go:not(.alarm) { animation: none; } }
   .tip { margin: 8px 0 0; font-size: .82rem; color: var(--muted); text-align: center; }
 
