@@ -7,10 +7,10 @@ export const DEFAULT_PARAMS = {
   eggPointy: 0.11,        // how much fatter the blunt end is
 
   // Placement on the setup screen (pixels, + = down). The egg is lifted (+ = up).
-  eggLift: 45,            // the resting egg sits this far above the screen middle
-  posAlt: 5,              // altitude block (label, mountains, slider)
+  eggLift: 40,            // the resting egg sits this far above the screen middle
+  posAlt: 1,              // altitude block (label, mountains, slider)
   altWidth: 290,          // width of the altitude slider and mountains (pixels)
-  posYolk: -55,             // yolk row (yolk, − +, its name)
+  posYolk: -25,             // yolk row (yolk, − +, its name)
   posStart: -45,            // Start
   // Text (pixels, + = down)
   txtAlt: 35,              // altitude heading (label / number / info line)
@@ -19,8 +19,8 @@ export const DEFAULT_PARAMS = {
   txtStart: 0,            // "Start klokka" on the egg, relative to its spot under the time             // yolk name ("Smilende"), relative to its spot above the yolk
 
   // Egg size picker (− egg +): the big egg itself grows and shrinks, and you play with that size
-  sizeSmall: 0.84,        // scale of a small egg (medium = 1)
-  sizeLarge: 1.16,        // scale of a large egg
+  sizeSmall: 0.9,        // scale of a small egg (medium = 1)
+  sizeLarge: 1.1,        // scale of a large egg
   sizeStiff: 260,         // spring stiffness (higher = snappier)
   sizeDamp: 12,           // spring damping (lower = more wobble/overshoot)
 
