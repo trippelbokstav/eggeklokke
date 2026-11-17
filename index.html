@@ -24,7 +24,7 @@
     --text: "Comfortaa", "Avenir Next", system-ui, sans-serif;   /* everything else */
   }
   body, button { font-family: var(--text) !important; }
-  #splash h1, .alt-head output { font-family: var(--display) !important; font-weight: 800; }
+  #tourTitle h1, .alt-head output { font-family: var(--display) !important; font-weight: 800; }
   .float { font-weight: 700; }
   .alt-label, .szlabel strong, .steplabel strong, .egg-start, .go, .stop, .szbtn, .stepbtn { font-weight: 700; }
   /* Dark: follows the phone (System), or the choice in Settings (data-theme on <html>) */
@@ -76,6 +76,15 @@
   #splash.textout > div { opacity: 0; }
   #splash p { margin: 10px auto 0; max-width: 18em; color: var(--muted); font-size: 1rem; line-height: 1.4; animation: splashIn .7s ease .35s both; }
   #splash.gone { opacity: 0; visibility: hidden; }
+  /* Intro title: sits above the altitude block, glides with the group, then out and away */
+  #tourTitle {
+    position: fixed; left: 0; right: 0; top: 0; z-index: 5; text-align: center; padding: 0 32px; pointer-events: none;
+    transform: translateY(var(--tt-y, 30vh)); opacity: 0;
+    transition: transform .6s cubic-bezier(.3, 1.05, .4, 1), opacity .5s ease;
+  }
+  #tourTitle.show { opacity: 1; }
+  #tourTitle h1 { margin: 0; font-size: clamp(2.4rem, 11vw, 3.6rem); letter-spacing: -0.02em; line-height: 1; }
+  #tourTitle p { margin: 8px auto 0; max-width: 18em; color: var(--muted); font-size: .9rem; line-height: 1.4; }
   /* Fade only: a transform here would shift the measured layout (the − + around the egg) */
   .app { transition: opacity .6s ease; }
   body.intro .app { opacity: 0; }
@@ -228,7 +237,7 @@
   .yolkbox { position: relative; height: 74px; }
   #yolkCanvas { position: absolute; left: 50%; top: 50%; width: 220px; height: 108px; transform: translate(-50%, -50%); pointer-events: none; display: block; }
   .stepbtn { position: relative; z-index: 1; }
-  .altblock { margin: 0 auto; width: var(--alt-w, 290px); max-width: 100%; transform: translateY(calc(var(--pos-alt, 0px) + var(--tour-alt, 0px))); transition: transform .45s cubic-bezier(.3, 1.1, .4, 1); }
+  .altblock { margin: 0 auto; width: var(--alt-w, 290px); max-width: 100%; transform: translateY(calc(var(--pos-alt, 0px) + var(--tour-alt, 0px))); transition: transform .6s cubic-bezier(.3, 1.05, .4, 1); }
   /* While setting the timer there is no need for the hint under Start */
   body:not(.running):not(.done) .tip { display: none; } /* room for the splash, overlapping a little */
   /* The label sits above the floating yolk, with a halo in the page color so it always reads */
@@ -265,7 +274,8 @@
 </style>
 </head>
 <body class="intro">
-<div id="splash" aria-hidden="true"><div><h1>Eggklokke</h1><p>Start the timer when the egg goes into boiling water.</p></div></div>
+<div id="splash" aria-hidden="true"></div>
+<div id="tourTitle" aria-hidden="true"><h1>Eggklokke</h1><p>Start the timer when the egg goes into boiling water.</p></div>
 <div id="scene"></div>
 <div class="app">
   <header>

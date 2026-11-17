@@ -154,7 +154,7 @@ function statusLine() { return t(doneKey) + ' · ' + t({ s: 'sizeS', m: 'sizeM',
 // Put every fixed text on the page in the chosen language
 function applyLang() {
   const set = (sel, text) => { const el = document.querySelector(sel); if (el) el.textContent = text; };
-  set('#splash p', t('introSub'));
+  set('#tourTitle p', t('introSub'));
   set('.alt-label', t('altitude'));
   const es = $('eggStart');
   if (es) es.innerHTML = t('start1') + '<br>' + t('start2');
@@ -338,7 +338,7 @@ function setAlt(v, phase) {
 function endSplash() {
   const sp = $('splash');
   if (!sp) return;
-  sp.classList.add('gone');
+  sp.classList.add('textout', 'gone');
   document.body.classList.remove('intro');
   setTimeout(() => sp.remove(), 700);
 }
@@ -349,6 +349,7 @@ function finishTour() {
   tourTimers.forEach(clearTimeout);
   touring = false;
   endSplash();
+  $('tourTitle').classList.remove('show');
   setTourAlt(0);
   world.setTourShift(0);
   world.setEggVisible(true);
@@ -372,27 +373,30 @@ async function runTour() {
   hideEls().forEach((el) => el && el.classList.add('thide'));
   world.setEggVisible(false);
   setAlt(2500, 'input');
-  await wait(Math.max(0, 1500 - performance.now()));
-  if (tourDone) return;
-  $('splash').classList.add('textout');
-  await wait(550);
-  if (tourDone) return;
-  endSplash();
-
+  const title = $('tourTitle');
   const mid = innerHeight / 2;
   const rect = (el) => el.getBoundingClientRect();
   const alt = document.querySelector('.altblock');
-  // 1) Altitude alone, centered: the slider runs from 2500 down to your home altitude
   const a = rect(alt);
-  setTourAlt(mid - (a.top + a.bottom) / 2);
-  await wait(250);
+  const titleH = rect(title).height;
+  const titleTop = a.top - titleH - 18; // where the title sits: just above the altitude block
+  const placeTitle = (y) => title.style.setProperty('--tt-y', y + 'px');
+
+  // 1) The title and the altitude together, centered. The slider runs from 2500 down to your home altitude.
+  const shift1 = mid - (titleTop + a.bottom) / 2;
+  setTourAlt(shift1);
+  placeTitle(titleTop + shift1);
+  endSplash();
+  title.classList.add('show');
+  await wait(500);
+  if (tourDone) return;
   const from = 2500;
   const to = S.home;
   const t0 = performance.now();
   await new Promise((res) => {
     const tick = (now) => {
       if (tourDone) return res();
-      const k = Math.min(1, (now - t0) / 1500);
+      const k = Math.min(1, (now - t0) / 1600);
       const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; // ease in-out
       setAlt(Math.round((from + (to - from) * e) / 50) * 50, 'input');
       if (k < 1) requestAnimationFrame(tick); else res();
@@ -401,53 +405,50 @@ async function runTour() {
   });
   if (tourDone) return;
   setAlt(to, 'change');
-  await wait(250);
+  await wait(600);
   if (tourDone) return;
 
-  // 2) The egg joins: altitude + egg centered together. It steps small, medium, large, then your size.
+  // 2) The egg joins: title, altitude and egg centered together (the title glides up). Small, then your size.
   const p = world.poseScreen();
-  const eggTop = 2 * p.y - p.bottom - 34;
-  const groupMid = (a.top + p.bottom) / 2;
-  const shift = mid - groupMid;
-  // The large egg is taller: give the altitude block room for it, so "Large egg" stays clear of the slider
+  const shift2 = mid - (titleTop + p.bottom) / 2;
+  // A large egg is taller: give the altitude block room for it, so its name stays clear of the slider
   const half = p.bottom - p.y;
-  const extra = half * (P.sizeLarge / sizeScale(sizeKey) - 1) + 10;
-  setTourAlt(shift - extra);
-  world.setTourShift(shift);
-  await wait(300); // let the altitude block move first, then the egg pops in
+  const extra = Math.max(0, half * (sizeScale(S.size) / sizeScale(sizeKey) - 1)) + 10;
+  setTourAlt(shift2 - extra);
+  placeTitle(titleTop + shift2 - extra);
+  world.setTourShift(shift2);
+  await wait(350); // the blocks move first, then the egg pops in
   if (tourDone) return;
-  setSize('s', false, false);
+  const first = S.size === 's' ? 'm' : 's';
+  setSize(first, false, false);
   world.setEggVisible(true);
   world.popIn();
   placeSizer();
   showEl(document.querySelector('.szlabel'));
-  for (const k of ['m', 'l', S.size]) {
-    await wait(380);
-    if (tourDone) return;
-    setSize(k, false, false);
-  }
-  await wait(300);
+  await wait(900);
+  if (tourDone) return;
+  setSize(S.size, false, false);
+  await wait(700);
   if (tourDone) return;
   showEl(sizeDown);
   showEl(sizeUp);
-  await wait(350);
+  await wait(700);
   if (tourDone) return;
 
-  // 3) The yolk joins: everything in its normal place. Hard, jammy, soft, then your yolk.
+  // 3) The yolk joins: everything in its normal place, the title glides out and fades. Soft, then your yolk.
   setTourAlt(0);
   world.setTourShift(0);
+  placeTitle(titleTop - 90);
+  title.classList.remove('show');
   placeSizer();
-  setDone('hard', false);
+  setDone(S.done === 'soft' ? 'smile' : 'soft', false);
   showEl(document.querySelector('.steplabel'));
   showEl(document.querySelector('.stepper'));
-  for (const k of ['smile', 'soft', S.done]) {
-    await wait(420);
-    if (tourDone) return;
-    setDone(k, false);
-  }
-  await wait(450);
+  await wait(1000);
   if (tourDone) return;
-  // (the yolk's − + are inside the stepper row; they come with it)
+  setDone(S.done, false);
+  await wait(700);
+  if (tourDone) return;
   touring = false;
   placeSizer();
   // 4) "Start klokka" 3 s after everything has landed
