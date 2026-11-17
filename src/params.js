@@ -22,16 +22,13 @@ export const DEFAULT_PARAMS = {
   yolkHardDamp: 44,        // about 2 * sqrt(stiffness) = no overshoot
   yolkLobe: 0.85,          // how far the soft yolk splashes out (5 lobes)
   yolkWaist: 0.62,        // soft: how far in the gaps between the lobes go (lower = deeper)
-  yolkDrop: 0.3,           // the drops on two of the soft lobes (radius, yolk = 1)
-  yolkNeck: 0.7,           // how far the drop sits from its lobe (higher = longer, thinner neck)
-  yolkGoo: 0.75,           // how fat and gooey the neck is (0 = thin, 1 = fat)
   yolkSmile: 0.6,          // smiling: 0 = plain circle, 1 = full crooked smile
   yolkSoftColor: '#F29A0E',
   yolkSmileColor: '#F0AE0B',
   yolkHardColor: '#F4C84F',
 
   // Altitude terrain: a line over the slider that grows from hills (low) to sharp mountains (2500 m)
-  terrainHeight: 50,       // pixels: how tall the highest mountain gets
+  terrainHeight: 72,       // pixels: how tall the highest mountain gets
   terrainSharp: 1,         // how ridged/sharp the mountains get up high (0 = always soft hills)
   terrainOct: 3,           // noise detail at the top (higher = more small jagged bits)
   terrainFreq: 1,          // how many peaks across the width

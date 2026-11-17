@@ -44,12 +44,10 @@ const edgeColor = (p) => (p < 0.5 ? mix(P.outlineStart, P.outlineMid, p * 2) : m
 
 // Egg size: picked with − and + around the big egg (the egg itself grows)
 const SIZES = ['s', 'm', 'l'];
-const SIZE_GRAMS = { s: 'under 53 g', m: '53–63 g', l: 'over 63 g' };
 let sizeKey = 'm';
 const currentTotal = () => totalSeconds(doneKey, sizeKey, +altEl.value);
 
 // Yolk: picked with − and + around a morphing yolk (soft / smiling / hard)
-const DONE_DESC = { soft: 'rennende plomme', smile: 'myk, kremet plomme', hard: 'fast plomme' };
 const DONE_NAME = { soft: 'Bløtkokt', smile: 'Smilende', hard: 'Hardkokt' };
 let doneKey = 'smile';
 const yolk = createYolk($('yolkCanvas'), P);
@@ -57,7 +55,6 @@ function setDone(k) {
   doneKey = k;
   yolk.set(k);
   $('yolkName').textContent = DONE_NAME[k];
-  $('yolkDesc').textContent = DONE_DESC[k];
   $('yolkDown').disabled = k === 'soft';
   $('yolkUp').disabled = k === 'hard';
 }
@@ -121,11 +118,14 @@ function updateTip() {
 function refreshIdle() {
   const h = +altEl.value;
   altOut.textContent = h + ' m';
-  altNote.textContent = h < 100
-    ? ''
-    : 'Vannet koker ved ca. ' + boilTemp(h).toFixed(1).replace('.', ',') + ' °C, så egget trenger ca. ' +
-      Math.round((altFactor(h) - 1) * 100) + ' % lengre tid.';
+  const extra = Math.round((altFactor(h) - 1) * 100);
+  altNote.textContent = 'Koker ved ' + boilTemp(h).toFixed(1).replace('.', ',') + ' °C' + (extra > 0 ? ' · ' + extra + ' % lengre tid' : '');
 }
+
+// Altitude heading: the label at 0 m, only the number while dragging, the info slides in when you let go
+const altHead = $('altHead');
+altEl.addEventListener('input', () => { altHead.dataset.state = +altEl.value > 0 ? 'drag' : 'zero'; });
+altEl.addEventListener('change', () => { altHead.dataset.state = +altEl.value > 0 ? 'rest' : 'zero'; });
 
 function start() {
   unlock();
@@ -210,8 +210,8 @@ updateTip();
 // ---------- 3D ----------
 let world = null;
 let game = null;
-// The egg rests in the middle of the free space (the spacer between altitude and yolk); the stage covers the whole app
-world = await createWorld($('scene'), P, $('spacer'), $('panel'));
+// The stage covers the whole app, so the egg rests at the vertical center of the screen
+world = await createWorld($('scene'), P, stage, $('panel'));
 
 // The little game: collect small eggs while the big one boils
 game = createGame(world, P, {
@@ -258,7 +258,6 @@ function setSize(k, force = false) {
   sizeKey = k;
   const name = SIZENAMES[k];
   $('sizeName').textContent = name.charAt(0).toUpperCase() + name.slice(1) + ' egg';
-  $('sizeGram').textContent = SIZE_GRAMS[k];
   sizeDown.disabled = k === 's';
   sizeUp.disabled = k === 'l';
   world.setSize(sizeScale(k), force);

@@ -23,7 +23,7 @@
     }
   }
   * { box-sizing: border-box; }
-  :root { padding-top: 0; padding-bottom: 0; --row-w: 298px; } /* one column: − + rows and the altitude line up */ /* the app pads for the notch itself (.app) */
+  :root { padding-top: 0; padding-bottom: 0; --row-w: 340px; } /* one column: − + rows and the altitude line up */ /* the app pads for the notch itself (.app) */
   html, body { height: 100%; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
@@ -95,12 +95,20 @@
   .seg input:checked + label small { color: var(--yolk-ink); opacity: .8; }
   .seg input:focus-visible + label { outline: 3px solid var(--ink); outline-offset: 2px; }
 
-  .alt-head { display: flex; gap: 8px; min-height: 40px; align-items: center; }
-  .alt-head label { font-size: .9rem; font-weight: 700; }
-  .alt-head output { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .alt-head { position: relative; height: 50px; text-align: center; }
+  .alt-head > * { position: absolute; left: 0; right: 0; transition: opacity .25s ease, transform .35s cubic-bezier(.2, 1.2, .4, 1); }
+  .alt-label { top: 10px; font-size: .9rem; font-weight: 700; color: var(--muted); }
+  .alt-head output { top: 2px; font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .alt-info { top: 30px; margin: 0; font-size: .78rem; color: var(--muted); }
+  .alt-head output, .alt-info { opacity: 0; }
+  .alt-info { transform: translateY(8px); }
+  .alt-head[data-state="drag"] .alt-label, .alt-head[data-state="rest"] .alt-label { opacity: 0; transform: translateY(-6px); }
+  .alt-head[data-state="drag"] output { opacity: 1; transform: translateY(8px) scale(1.08); }
+  .alt-head[data-state="rest"] output { opacity: 1; }
+  .alt-head[data-state="rest"] .alt-info { opacity: 1; transform: none; transition-delay: .08s; }
   /* Altitude: the slider track is the ground, the terrain line rises from it (canvas behind, bottom = track) */
-  .altwrap { position: relative; padding-top: 52px; }
-  #terrain { position: absolute; left: 0; top: 0; width: 100%; height: calc(52px + 15px); pointer-events: none; display: block; }
+  .altwrap { position: relative; padding-top: 76px; }
+  #terrain { position: absolute; left: 0; top: 0; width: 100%; height: calc(76px + 15px); pointer-events: none; display: block; }
   input[type=range] {
     -webkit-appearance: none; appearance: none; background: transparent; position: relative;
     width: 100%; height: 30px; margin: 0; cursor: pointer; touch-action: pan-y;
@@ -125,37 +133,37 @@
     padding: 0 22px;
   }
   .panel button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-  .go { background: var(--yolk); color: var(--yolk-ink); }
-  .stop { background: var(--panel); color: var(--ink); border: 2px solid var(--line); }
-  .go.alarm { background: var(--alert); color: #fff; }
+  .go, .stop, .go.alarm { background: transparent; border: 0; }
+  .go { color: var(--yolk); font-size: 1.6rem !important; letter-spacing: .01em; }
+  .go.alarm { color: var(--alert); }
+  .stop { color: var(--muted); }
+  .go:active, .stop:active { opacity: .6; }
   .tip { margin: 8px 0 0; font-size: .82rem; color: var(--muted); text-align: center; }
 
   /* Size picker: − and + on each side of the big egg, the name under it */
   .sizer { position: absolute; inset: 0; pointer-events: none; }
   .szbtn, .stepbtn {
-    width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--line); background: var(--panel);
-    color: var(--ink); font-family: inherit; font-size: 30px; font-weight: 700; line-height: 1; padding: 0 0 3px; cursor: pointer; pointer-events: auto;
+    width: 52px; height: 52px; border-radius: 12px; border: 0; background: transparent;
+    color: var(--ink); font-family: inherit; font-size: 36px; font-weight: 500; line-height: 1; padding: 0 0 4px; cursor: pointer; pointer-events: auto;
     transition: opacity .2s, transform .12s;
   }
   .szbtn { position: absolute; top: var(--egg-y, 50%); transform: translate(-50%, -50%); }
-  .szbtn:active { transform: translate(-50%, -50%) scale(.9); background: var(--track); }
-  .panel .stepbtn { min-height: 0; padding: 0 0 3px; border-radius: 50%; border: 2px solid var(--line); font-size: 30px; font-weight: 700; background: var(--panel); color: var(--ink); }
-  .stepbtn:active { transform: scale(.9); background: var(--track); }
-  .szbtn:disabled, .stepbtn:disabled { opacity: .3; cursor: default; }
+  .szbtn:active { transform: translate(-50%, -50%) scale(.85); opacity: .6; }
+  .panel .stepbtn { min-height: 0; padding: 0 0 4px; border-radius: 12px; font-size: 36px; font-weight: 500; background: transparent; color: var(--ink); }
+  .stepbtn:active { transform: scale(.85); opacity: .6; }
+  .szbtn:disabled, .stepbtn:disabled { opacity: .2; cursor: default; }
   .szbtn:focus-visible, .stepbtn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   /* Yolk picker: − yolk + in the panel */
   .stepper { display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; gap: 12px; width: var(--row-w); max-width: 100%; margin: 0 auto; }
-  .yolkbox { position: relative; height: 112px; }
-  #yolkCanvas { position: absolute; left: 50%; top: 50%; width: 300px; height: 216px; transform: translate(-50%, -50%); pointer-events: none; display: block; }
+  .yolkbox { position: relative; height: 84px; }
+  #yolkCanvas { position: absolute; left: 50%; top: 50%; width: 240px; height: 124px; transform: translate(-50%, -50%); pointer-events: none; display: block; }
   .stepbtn { position: relative; z-index: 1; }
   .altblock { margin: 0 auto; width: var(--row-w); max-width: 100%; }
-  .altblock .note { min-height: 1.35em; text-align: center; }
   /* While setting the timer there is no need for the hint under Start */
   body:not(.running):not(.done) .tip { display: none; } /* room for the splash, overlapping a little */
   /* The label sits above the floating yolk, with a halo in the page color so it always reads */
   .steplabel { position: relative; z-index: 1; text-shadow: 0 0 3px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg); margin: 0 0 8px; text-align: center; display: flex; flex-direction: column; align-items: center; }
   .steplabel strong { font-size: 1rem; font-weight: 800; }
-  .steplabel small { font-size: .75rem; color: var(--muted); }
   #sizeDown { left: var(--minus-x, 14%); }
   #sizeUp { left: var(--plus-x, 86%); }
   .szlabel {
@@ -163,7 +171,6 @@
     display: flex; flex-direction: column; align-items: center; transition: top .3s cubic-bezier(.3, 1.4, .5, 1);
   }
   .szlabel strong { font-size: 1rem; font-weight: 800; }
-  .szlabel small { font-size: .75rem; color: var(--muted); }
 
   /* While the egg boils: hide the settings, give the egg the room */
   body.running .settings, body.done .settings, body.running .sizer, body.done .sizer { display: none; }
@@ -193,12 +200,15 @@
     <h1 class="sr-only">Eggklokke</h1>
     <p class="sub" id="sub">Start klokka når egget går ned i kokende vann.</p>
     <div class="altblock settings">
-      <div class="alt-head"><label for="alt">Høyde over havet</label><output id="altOut" for="alt">0 m</output></div>
+      <div class="alt-head" id="altHead" data-state="zero">
+        <label class="alt-label" for="alt">Høyde over havet</label>
+        <output id="altOut" for="alt">0 m</output>
+        <p class="alt-info" id="altNote"></p>
+      </div>
       <div class="altwrap">
         <canvas id="terrain" aria-hidden="true"></canvas>
         <input type="range" id="alt" min="0" max="2500" step="50" value="0">
       </div>
-      <p class="note" id="altNote"></p>
     </div>
   </header>
   <div class="spacer" id="spacer"></div>
@@ -208,7 +218,7 @@
     <div class="sizer" id="sizer" hidden>
       <button class="szbtn" id="sizeDown" type="button" aria-label="Mindre egg">−</button>
       <button class="szbtn" id="sizeUp" type="button" aria-label="Større egg">+</button>
-      <p class="szlabel" aria-live="polite"><strong id="sizeName">Medium egg</strong><small id="sizeGram">53–63 g</small></p>
+      <p class="szlabel" aria-live="polite"><strong id="sizeName">Medium egg</strong></p>
     </div>
   </div>
   <div class="sr-only" role="timer" id="srTime"></div>
@@ -221,7 +231,7 @@
         <div class="yolkbox"><canvas id="yolkCanvas" aria-hidden="true"></canvas></div>
         <button class="stepbtn" id="yolkUp" type="button" aria-label="Fastere plomme">+</button>
       </div>
-      <p class="steplabel" aria-live="polite"><strong id="yolkName">Smilende</strong><small id="yolkDesc">myk, kremet plomme</small></p>
+      <p class="steplabel" aria-live="polite"><strong id="yolkName">Smilende</strong></p>
     </div>
 
     <div class="actions">
