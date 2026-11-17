@@ -7,11 +7,11 @@ export const DEFAULT_PARAMS = {
   eggPointy: 0.11,        // how much fatter the blunt end is
 
   // Placement on the setup screen (pixels, + = down). The egg is lifted (+ = up).
-  eggLift: 60,            // the resting egg sits this far above the screen middle
-  posAlt: -15,              // altitude block (label, mountains, slider)
+  eggLift: 75,            // the resting egg sits this far above the screen middle
+  posAlt: -25,              // altitude block (label, mountains, slider)
   altWidth: 290,          // width of the altitude slider and mountains (pixels)
-  posYolk: -75,             // yolk row (yolk, − +, its name)
-  posStart: -40,            // Start
+  posYolk: -85,             // yolk row (yolk, − +, its name)
+  posStart: -45,            // Start
   // Text (pixels, + = down)
   txtAlt: 35,              // altitude heading (label / number / info line)
   txtEgg: -13,              // egg name ("Medium egg"), relative to its spot above the egg
