@@ -1,6 +1,7 @@
 // Eggklokke 2: the clock is painted on an egg you can roll around while it boils
 import { loadParams } from './params.js';
 import { createWorld } from './world.js';
+import { fontReady } from './eggTexture.js';
 import { createInput } from './input.js';
 import { createGame } from './game.js';
 import { haptic, hapticDiag } from './native.js';
@@ -255,6 +256,9 @@ function floatLabel(e) {
   setTimeout(() => el.remove(), 1000);
 }
 stage.classList.add('ready');
+
+// The display font (Sniglet) loads from the web: repaint the egg's time once it is there
+if (document.fonts) document.fonts.load('800 100px Sniglet').then(() => { fontReady(); world.invalidate(); }).catch(() => {});
 
 // Intro: keep the title up for 2 seconds from page start (the 3D loaded behind it), then let the app in
 setTimeout(() => {

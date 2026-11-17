@@ -2,7 +2,7 @@
 // seen straight from above. The edges of the screen are the walls.
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { createEggTexture } from './eggTexture.js';
+import { createEggTexture, FONT } from './eggTexture.js';
 
 const STEP = 1 / 60;
 const WALL = 0.5;      // half thickness of the invisible walls
@@ -100,9 +100,9 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       let size = 92;
-      ctx.font = `600 ${size}px "Nunito", "Avenir Next", system-ui, sans-serif`;
+      ctx.font = `800 ${size}px ${FONT}`;
       const w = ctx.measureText(text).width;
-      if (w > 116) { size = Math.floor(size * 116 / w); ctx.font = `600 ${size}px "Nunito", "Avenir Next", system-ui, sans-serif`; }
+      if (w > 116) { size = Math.floor(size * 116 / w); ctx.font = `800 ${size}px ${FONT}`; }
       ctx.fillText(text, 64, 68);
       tex.needsUpdate = true;
       dirty = true;

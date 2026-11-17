@@ -5,6 +5,9 @@
 <meta name="theme-color" content="#FFE49A">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Eggklokke</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&family=Sniglet:wght@400;800&display=swap">
 <style>
   /* Theme: Plommegul (yolk yellow). --yolk is the accent (orange, so it reads on the yellow page) */
   :root {
@@ -17,7 +20,12 @@
     --yolk-ink: #2A1D00;
     --track: #F5D57E;
     --alert: #C2300C;
+    --display: "Sniglet", "Nunito", "Avenir Next", system-ui, sans-serif; /* playful, round display font */
   }
+  /* The display font for numbers, names, Start and the title; small info text stays in Nunito */
+  #splash h1, .alt-head output, .alt-label, .szlabel strong, .steplabel strong, .egg-start,
+  .go, .stop, .szbtn, .stepbtn, .score, .float { font-family: var(--display) !important; }
+  #splash h1, .alt-head output, .szlabel strong, .steplabel strong, .egg-start, .go, .stop { font-weight: 800; }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #2B1F06; --panel: #3A2A0C; --ink: #FFE9B0; --muted: #C9A55A;
