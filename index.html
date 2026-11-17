@@ -139,6 +139,15 @@
   .stop { color: var(--muted); }
   .go:active, .stop:active { opacity: .6; }
   .go:not(.alarm) { animation: breathe 2.6s ease-in-out infinite; }
+  /* The egg is the start button: "Start klokka" sits in 2D on top of the egg, under the time */
+  .egg-start {
+    position: absolute; left: 0; right: 0; top: var(--start-y, 60%); margin: 0; text-align: center; pointer-events: none;
+    color: var(--yolk); font-weight: 800; font-size: 1rem; line-height: 1.1; letter-spacing: .01em;
+    animation: breathe 2.6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) { .egg-start { animation: none; } }
+  /* While setting the timer the Start button is not needed (tap the egg), but it keeps its space so nothing moves */
+  body:not(.running):not(.done) .go { visibility: hidden; }
   @keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
   @media (prefers-reduced-motion: reduce) { .go:not(.alarm) { animation: none; } }
   .tip { margin: 8px 0 0; font-size: .82rem; color: var(--muted); text-align: center; }
@@ -222,6 +231,7 @@
       <button class="szbtn" id="sizeDown" type="button" aria-label="Mindre egg">−</button>
       <button class="szbtn" id="sizeUp" type="button" aria-label="Større egg">+</button>
       <p class="szlabel" aria-live="polite"><strong id="sizeName">Medium egg</strong></p>
+      <p class="egg-start" id="eggStart" aria-hidden="true">Start<br>klokka</p>
     </div>
   </div>
   <div class="sr-only" role="timer" id="srTime"></div>

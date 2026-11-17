@@ -15,7 +15,8 @@ export const DEFAULT_PARAMS = {
   // Text (pixels, + = down)
   txtAlt: 35,              // altitude heading (label / number / info line)
   txtEgg: -13,              // egg name ("Medium egg"), relative to its spot above the egg
-  txtYolk: -16,             // yolk name ("Smilende"), relative to its spot above the yolk
+  txtYolk: -16,
+  txtStart: 0,            // "Start klokka" on the egg, relative to its spot under the time             // yolk name ("Smilende"), relative to its spot above the yolk
 
   // Egg size picker (− egg +): the big egg itself grows and shrinks, and you play with that size
   sizeSmall: 0.84,        // scale of a small egg (medium = 1)

@@ -32,6 +32,7 @@ export function createLab(P, world, diag) {
   const txt = gui.addFolder('Tekst');
   txt.add(P, 'txtAlt', -60, 60, 1).name('høyde-tekst (px)').onChange(relayout);
   txt.add(P, 'txtEgg', -60, 60, 1).name('egg-navn (px)').onChange(relayout);
+  txt.add(P, 'txtStart', -60, 60, 1).name('start-tekst på egget (px)').onChange(relayout);
   txt.add(P, 'txtYolk', -60, 60, 1).name('plomme-navn (px)').onChange(relayout);
 
   const yolk = gui.addFolder('Plomme');

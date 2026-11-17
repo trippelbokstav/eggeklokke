@@ -202,6 +202,21 @@ goBtn.addEventListener('click', () => {
   if (done) { haptic.press(); reset(); } else if (!running) start();
 });
 resetBtn.addEventListener('click', () => { haptic.press(); reset(); });
+
+// The egg is the start button: a tap on the resting egg starts the clock (a drag is not a tap)
+let tapFrom = null;
+stage.addEventListener('pointerdown', (e) => { tapFrom = { x: e.clientX, y: e.clientY }; });
+stage.addEventListener('click', (e) => {
+  if (running || done || !world || !tapFrom) return;
+  if (e.target.closest && e.target.closest('button')) return;
+  if (Math.hypot(e.clientX - tapFrom.x, e.clientY - tapFrom.y) > 12) return;
+  const p = world.poseScreen();
+  const ry = p.bottom - p.y;              // half length on screen
+  const rx = ry * P.eggWidth / P.eggLength; // half width on screen
+  const dx = (e.clientX - p.x) / rx;
+  const dy = (e.clientY - p.y) / ry;
+  if (dx * dx + dy * dy <= 1.1) start();
+});
 altEl.addEventListener('input', refreshIdle);
 
 refreshIdle();
@@ -292,6 +307,8 @@ function placeSizer() {
   sizer.style.setProperty('--plus-x', (p.x - r.left + gap) + 'px');
   const eggTop = 2 * p.y - p.bottom; // the egg is symmetric around its middle
   sizer.style.setProperty('--label-y', (eggTop - r.top - 30 + P.txtEgg) + 'px');
+  // "Start klokka" under the time painted on the egg (the time sits at the egg's middle)
+  sizer.style.setProperty('--start-y', (p.y - r.top + (p.bottom - p.y) * 0.36 + P.txtStart) + 'px');
 }
 function stepSize(dir) {
   const i = SIZES.indexOf(sizeKey) + dir;
