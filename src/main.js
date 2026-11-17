@@ -297,7 +297,7 @@ stage.classList.add('ready');
 // The display font (Sniglet) loads from the web: repaint the egg's time once it is there
 if (document.fonts) Promise.all([document.fonts.load('800 100px Sniglet'), document.fonts.load('700 100px Comfortaa')]).then(() => { fontReady(); world.invalidate(); }).catch(() => {});
 
-// Intro: the title stands for 1.5 s from page start (the 3D loads behind it), fades all the way out,
+// Intro: the title stands for 2.5 s from page start (the 3D loads behind it), fades all the way out,
 // and only then does the app fade up
 setTimeout(() => {
   $('splash').classList.add('textout');
@@ -307,7 +307,7 @@ setTimeout(() => {
     document.body.classList.remove('intro');
     setTimeout(() => $('splash').remove(), 700);
   }, 550);
-}, Math.max(0, 1500 - performance.now()));
+}, Math.max(0, 2500 - performance.now()));
 
 // ---------- Size picker: − egg + ----------
 const sizer = $('sizer');
