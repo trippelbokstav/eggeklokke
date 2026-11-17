@@ -372,6 +372,7 @@ async function runTour() {
   document.addEventListener('click', skipTour, true);
   hideEls().forEach((el) => el && el.classList.add('thide'));
   world.setEggVisible(false);
+  setDone('smile', false); // the tour's own story; your yolk pops in at the end
   setAlt(2500, 'input');
   const title = $('tourTitle');
   const mid = innerHeight / 2;
@@ -379,19 +380,23 @@ async function runTour() {
   const alt = document.querySelector('.altblock');
   const a = rect(alt);
   const titleH = rect(title).height;
-  const titleTop = a.top - titleH - 18; // where the title sits: just above the altitude block
-  const placeTitle = (y) => title.style.setProperty('--tt-y', y + 'px');
+  // The title is anchored by its bottom edge (it grows upward if a web font makes it taller)
+  const titleBottom = a.top - 28;
+  const titleTop = titleBottom - titleH;
+  const placeTitle = (bottomY) => title.style.setProperty('--tt-y', bottomY + 'px');
 
   // 1) The title and the altitude together, centered. The slider runs from 2500 down to your home altitude.
   const shift1 = mid - (titleTop + a.bottom) / 2;
   setTourAlt(shift1);
-  placeTitle(titleTop + shift1);
+  placeTitle(titleBottom + shift1);
   endSplash();
   title.classList.add('show');
   await wait(500);
   if (tourDone) return;
+  // The tour always shows the same story (2500 m -> 0 m, small -> medium, soft -> jammy);
+  // your own settings pop into place once everything has landed
   const from = 2500;
-  const to = S.home;
+  const to = 0;
   const t0 = performance.now();
   await new Promise((res) => {
     const tick = (now) => {
@@ -411,23 +416,22 @@ async function runTour() {
   // 2) The egg joins: title, altitude and egg centered together (the title glides up). Small, then your size.
   const p = world.poseScreen();
   const shift2 = mid - (titleTop + p.bottom) / 2;
-  // A large egg is taller: give the altitude block room for it, so its name stays clear of the slider
+  // The medium egg is taller than the small one it starts as: give the altitude block room for it
   const half = p.bottom - p.y;
-  const extra = Math.max(0, half * (sizeScale(S.size) / sizeScale(sizeKey) - 1)) + 10;
+  const extra = Math.max(0, half * (sizeScale('m') / sizeScale(sizeKey) - 1)) + 10;
   setTourAlt(shift2 - extra);
-  placeTitle(titleTop + shift2 - extra);
+  placeTitle(titleBottom + shift2 - extra);
   world.setTourShift(shift2);
   await wait(350); // the blocks move first, then the egg pops in
   if (tourDone) return;
-  const first = S.size === 's' ? 'm' : 's';
-  setSize(first, false, false);
+  setSize('s', false, false);
   world.setEggVisible(true);
   world.popIn();
   placeSizer();
   showEl(document.querySelector('.szlabel'));
   await wait(900);
   if (tourDone) return;
-  setSize(S.size, false, false);
+  setSize('m', false, false);
   await wait(700);
   if (tourDone) return;
   showEl(sizeDown);
@@ -438,18 +442,23 @@ async function runTour() {
   // 3) The yolk joins: everything in its normal place, the title glides out and fades. Soft, then your yolk.
   setTourAlt(0);
   world.setTourShift(0);
-  placeTitle(titleTop - 90);
+  placeTitle(titleBottom - 140);
   title.classList.remove('show');
   placeSizer();
-  setDone(S.done === 'soft' ? 'smile' : 'soft', false);
+  setDone('soft', false);
   showEl(document.querySelector('.steplabel'));
   showEl(document.querySelector('.stepper'));
   await wait(1000);
   if (tourDone) return;
-  setDone(S.done, false);
-  await wait(700);
+  setDone('smile', false);
+  await wait(900);
   if (tourDone) return;
   touring = false;
+  // Everything has landed: your own settings pop into place
+  setAlt(S.home, 'input');
+  setAlt(S.home, 'change');
+  setSize(S.size, false, false);
+  setDone(S.done, false);
   placeSizer();
   // 4) "Start klokka" 3 s after everything has landed
   await wait(3000);

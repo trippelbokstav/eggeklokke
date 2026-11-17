@@ -79,7 +79,7 @@
   /* Intro title: sits above the altitude block, glides with the group, then out and away */
   #tourTitle {
     position: fixed; left: 0; right: 0; top: 0; z-index: 5; text-align: center; padding: 0 32px; pointer-events: none;
-    transform: translateY(var(--tt-y, 30vh)); opacity: 0;
+    transform: translateY(calc(var(--tt-y, 40vh) - 100%)); opacity: 0;
     transition: transform .6s cubic-bezier(.3, 1.05, .4, 1), opacity .5s ease;
   }
   #tourTitle.show { opacity: 1; }
