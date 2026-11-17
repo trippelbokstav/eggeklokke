@@ -1,4 +1,4 @@
-# Eggklokke
+# Trillekok
 
 An egg timer that entertains you until the egg is done: the clock is painted on an egg
 that you roll around the screen by tilting the phone (or dragging with a finger/mouse).

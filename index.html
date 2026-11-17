@@ -1,28 +1,49 @@
 <!DOCTYPE html>
-<html lang="nb">
+<html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="theme-color" content="#FFE49A">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Eggklokke</title>
+<title>Trillekok</title>
 <style>
+  /* Fonts ship with the app (works offline). Sniglet and Comfortaa: SIL Open Font License, see public/fonts/OFL.txt */
+  @font-face { font-family: 'Comfortaa'; font-style: normal; font-weight: 500 700; font-display: swap; src: url('fonts/comfortaa-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Comfortaa'; font-style: normal; font-weight: 500 700; font-display: swap; src: url('fonts/comfortaa-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Sniglet'; font-style: normal; font-weight: 800; font-display: swap; src: url('fonts/sniglet-800-latin-ext.woff2') format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Sniglet'; font-style: normal; font-weight: 800; font-display: swap; src: url('fonts/sniglet-800-latin.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+  /* Theme: Plommegul (yolk yellow). --yolk is the accent (orange, so it reads on the yellow page) */
   :root {
-    --bg: #E3ECEF;
-    --panel: #F4F8F9;
-    --ink: #14303B;
-    --muted: #55707C;
-    --line: #BCCDD4;
-    --yolk: #F0AE0B;
+    --bg: #FFE49A;
+    --panel: #FFF0C4;
+    --ink: #3A2700;
+    --muted: #8A6A1E;
+    --line: #EBC66A;
+    --yolk: #E2680A;
     --yolk-ink: #2A1D00;
-    --track: #CFDDE2;
-    --alert: #C2410C;
+    --track: #F5D57E;
+    --alert: #C2300C;
+    --display: "Sniglet", "Comfortaa", system-ui, sans-serif;   /* the big things: title, clock, altitude number */
+    --text: "Comfortaa", "Avenir Next", system-ui, sans-serif;   /* everything else */
+  }
+  body, button { font-family: var(--text) !important; }
+  #tourTitle h1, .alt-head output { font-family: var(--display) !important; font-weight: 800; }
+  .float { font-weight: 700; }
+  .alt-label, .szlabel strong, .steplabel strong, .egg-start, .go, .stop, .szbtn, .stepbtn { font-weight: 700; }
+  /* Dark: follows the phone (System), or the choice in Settings (data-theme on <html>) */
+  :root[data-theme="dark"] {
+      --bg: #2B1F06; --panel: #3A2A0C; --ink: #FFE9B0; --muted: #C9A55A;
+      --line: #5A4413; --yolk: #FF9A2E; --yolk-ink: #2A1D00; --track: #46340F; --alert: #FF7A45;
+      color-scheme: dark;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0F1E26; --panel: #172A34; --ink: #E6F0F3; --muted: #93AAB5;
-      --line: #2B4452; --yolk: #F4B71C; --yolk-ink: #2A1D00; --track: #243A46; --alert: #FB923C;
+    :root:not([data-theme="light"]) {
+      --bg: #2B1F06; --panel: #3A2A0C; --ink: #FFE9B0; --muted: #C9A55A;
+      --line: #5A4413; --yolk: #FF9A2E; --yolk-ink: #2A1D00; --track: #46340F; --alert: #FF7A45;
     }
   }
   * { box-sizing: border-box; }
+  :root { padding-top: 0; padding-bottom: 0; --row-w: 340px; } /* one column: − + rows and the altitude line up */ /* the app pads for the notch itself (.app) */
   html, body { height: 100%; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
@@ -40,17 +61,100 @@
     display: flex; flex-direction: column;
     padding: env(safe-area-inset-top, 0px) 18px env(safe-area-inset-bottom, 0px);
   }
-  header { position: relative; padding-top: 14px; text-align: center; }
+  /* Setup screen: altitude on top, the egg in the middle of the screen, yolk + Start at the bottom.
+     The stage fills the whole app behind the top and bottom blocks, so the egg rests at screen center. */
+  header { position: relative; z-index: 1; padding-top: 12px; }
+  header .sub { display: none; margin: 8px 0 0; padding: 0 44px; text-align: center; }
+  body.running header .sub, body.done header .sub { display: block; }
+  .spacer { flex: 1 1 auto; }
+  .panel { position: relative; z-index: 1; }
+  /* Intro: the title stands alone for 2 seconds, then lifts away and the app comes in */
+  #splash {
+    position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; background: var(--bg);
+    transition: opacity .6s ease, visibility .6s;
+  }
+  #splash h1 { font-size: clamp(2.6rem, 12vw, 4rem); letter-spacing: -0.02em; animation: splashIn .7s cubic-bezier(.2, 1.4, .4, 1) both; transition: transform .6s cubic-bezier(.6, 0, .4, 1); }
+  #splash > div { text-align: center; padding: 0 32px; transition: opacity .5s ease; }
+  /* Step 1: the title fades all the way out. Step 2: the yellow cover fades and the app comes up. */
+  #splash.textout > div { opacity: 0; }
+  #splash p { margin: 10px auto 0; max-width: 18em; color: var(--muted); font-size: 1rem; line-height: 1.4; animation: splashIn .7s ease .35s both; }
+  #splash.gone { opacity: 0; visibility: hidden; }
+  /* Intro title: sits above the altitude block, glides with the group, then out and away */
+  #tourTitle {
+    position: fixed; left: 0; right: 0; top: 0; z-index: 5; text-align: center; padding: 0 32px; pointer-events: none;
+    transform: translateY(calc(var(--tt-y, 40vh) - 100%)); opacity: 0;
+    transition: transform .6s cubic-bezier(.3, 1.05, .4, 1), opacity .5s ease;
+  }
+  #tourTitle.show { opacity: 1; }
+  #tourTitle h1 { margin: 0; font-size: clamp(2.4rem, 11vw, 3.6rem); letter-spacing: -0.02em; line-height: 1; }
+  /* The one-line explanation: fades in at the bottom once the intro has landed, stays 4 s, fades out */
+  .hint {
+    position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 26px); z-index: 4; margin: 0 auto;
+    max-width: 22em; padding: 0 28px; text-align: center; color: var(--muted); font-size: .92rem; line-height: 1.45;
+    opacity: 0; transition: opacity .7s ease; pointer-events: none;
+  }
+  .hint.show { opacity: 1; }
+  /* After Cancel: the line becomes a button with the countdown still running */
+  .hint.undo { pointer-events: auto; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--yolk); font-weight: 700; }
+  .undo-time { font-family: var(--display); font-weight: 800; font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .undo-ends { font-weight: 500; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; opacity: 0; transition: opacity .5s ease; }
+  .undo-ends.on { opacity: 1; }
+  .hint.undo:active { opacity: .6; }
+  body.running .hint, body.done .hint { display: none; }
+  /* Fade only: a transform here would shift the measured layout (the − + around the egg) */
+  .app { transition: opacity .6s ease; }
+  body.intro .app { opacity: 0; }
+  @keyframes splashIn { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    #splash h1, .app { animation: none; transition: opacity .3s; transform: none !important; }
+  }
   .labbtn {
-    position: absolute; left: 0; top: 10px; width: 40px; height: 40px; border: 0; border-radius: 12px;
+    position: absolute; right: 0; z-index: 2; top: 10px; width: 40px; height: 40px; border: 0; border-radius: 12px;
     background: transparent; color: var(--muted); font-size: 22px; line-height: 40px; cursor: pointer; padding: 0;
   }
   .labbtn:active { background: var(--track); }
+  .labbtn { font-size: 26px; letter-spacing: 1px; }
+
+  /* Settings sheet */
+  #settings {
+    position: fixed; inset: 0; z-index: 2600; background: color-mix(in srgb, var(--ink) 25%, transparent);
+    display: flex; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity .25s ease;
+  }
+  #settings[hidden] { display: none; } /* display:flex above would otherwise beat the hidden attribute */
+  #settings.open { opacity: 1; }
+  #settings .sheet {
+    width: 100%; max-width: 520px; max-height: 88dvh; overflow-y: auto; background: var(--bg); color: var(--ink);
+    border-radius: 22px 22px 0 0; padding: 14px 22px calc(env(safe-area-inset-bottom, 0px) + 24px);
+    transform: translateY(24px); transition: transform .3s cubic-bezier(.2, .9, .3, 1);
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  #settings.open .sheet { transform: none; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; }
+  .sheet h2 { margin: 0; font-size: 1.3rem; font-family: var(--display); font-weight: 800; }
+  .sheet h3 { margin: 0 0 8px; font-size: .85rem; font-weight: 700; color: var(--muted); }
+  .sheet section { display: flex; flex-direction: column; }
+  .sheet button { font-family: var(--text); color: var(--ink); cursor: pointer; }
+  .sheet-close { width: 40px; height: 40px; border: 0; background: transparent; font-size: 20px; border-radius: 12px; }
+  .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .seg3 button { border: 2px solid var(--line); background: transparent; border-radius: 12px; padding: 10px 4px; font-weight: 700; font-size: .9rem; }
+  .seg3 button[aria-pressed="true"] { background: var(--yolk); border-color: var(--yolk); color: var(--bg); }
+  .sheet select { font: 700 1rem var(--text); color: var(--ink); background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .sheet-note { margin: 0 0 8px; font-size: .8rem; line-height: 1.45; color: var(--muted); }
+  .vrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .vrow > span { font-weight: 700; font-size: .95rem; }
+  .vstep { display: flex; align-items: center; gap: 4px; }
+  .vstep button { width: 40px; height: 40px; border: 0; background: transparent; font-size: 24px; font-weight: 500; border-radius: 10px; }
+  .vstep button:active { opacity: .5; }
+  .vstep output { min-width: 3.6em; text-align: center; font-family: var(--display); font-weight: 800; font-size: 1.75rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .sheet-link { align-self: flex-start; border: 0; background: transparent; padding: 10px 0; font-weight: 700; font-size: .9rem; color: var(--yolk) !important; }
+  .sheet-link:disabled { opacity: .35; cursor: default; }
+  .sheet-list { margin: 0 0 6px; padding-left: 1.1em; font-size: .9rem; line-height: 1.6; }
+  .sheet button:focus-visible, .sheet select:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   h1 { font-size: 1.25rem; margin: 0; font-weight: 800; letter-spacing: -0.01em; }
   .sub { margin: 4px 0 0; font-size: .9rem; color: var(--muted); min-height: 1.2em; }
 
   /* The 3D scene */
-  #stage { position: relative; flex: 1 1 auto; min-height: 220px; touch-action: none; cursor: grab; }
+  #stage { position: absolute; inset: 0; z-index: 0; touch-action: none; cursor: grab; }
   #stage:active { cursor: grabbing; }
   #stage .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: .9rem; }
   #stage.ready .loading { display: none; }
@@ -71,25 +175,101 @@
   .seg input:checked + label small { color: var(--yolk-ink); opacity: .8; }
   .seg input:focus-visible + label { outline: 3px solid var(--ink); outline-offset: 2px; }
 
-  .alt-head { display: flex; justify-content: space-between; align-items: baseline; }
-  .alt-head strong { font-size: .9rem; }
-  .alt-head output { font-weight: 800; font-variant-numeric: tabular-nums; }
-  input[type=range] { width: 100%; accent-color: var(--yolk); height: 30px; margin: 0; }
+  .alt-head { position: relative; height: 66px; text-align: center; transform: translateY(var(--txt-alt, 0px)); }
+  .alt-head > * { position: absolute; left: 0; right: 0; transition: opacity .25s ease, transform .35s cubic-bezier(.2, 1.2, .4, 1); }
+  .alt-label { top: 18px; font-size: .9rem; font-weight: 700; color: var(--muted); }
+  .alt-head output { top: 0; font-size: 2.3rem; line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .alt-info { top: 46px; margin: 0; font-size: .78rem; color: var(--muted); }
+  .alt-head output, .alt-info { opacity: 0; }
+  .alt-info { transform: translateY(8px); }
+  .alt-head[data-state="drag"] .alt-label, .alt-head[data-state="rest"] .alt-label { opacity: 0; transform: translateY(-6px); }
+  .alt-head[data-state="drag"] output { opacity: 1; transform: translateY(8px) scale(1.08); }
+  .alt-head[data-state="rest"] output { opacity: 1; }
+  .alt-head[data-state="rest"] .alt-info { opacity: 1; transform: none; transition-delay: .08s; }
+  /* Altitude: the slider track is the ground, the terrain line rises from it (canvas behind, bottom = track) */
+  .altwrap { position: relative; padding-top: 76px; }
+  #terrain { position: absolute; left: 0; top: 0; width: 100%; height: calc(76px + 15px); pointer-events: none; display: block; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; background: transparent; position: relative;
+    width: 100%; height: 30px; margin: 0; cursor: pointer; touch-action: pan-y;
+  }
+  input[type=range]::-webkit-slider-runnable-track { height: 2px; background: var(--muted); border-radius: 1px; }
+  input[type=range]::-moz-range-track { height: 2px; background: var(--muted); border-radius: 1px; }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 24px; height: 24px; margin-top: -11px; border-radius: 50%;
+    background: var(--yolk); border: 3px solid var(--bg); box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%; background: var(--yolk); border: 3px solid var(--bg); box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+  }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.15); }
+  input[type=range]:focus-visible::-webkit-slider-thumb { outline: 3px solid var(--ink); outline-offset: 2px; }
+  input[type=range]:focus-visible::-moz-range-thumb { outline: 3px solid var(--ink); outline-offset: 2px; }
   .note { font-size: .78rem; color: var(--muted); margin: 2px 0 0; line-height: 1.35; }
 
-  .actions { display: grid; gap: 10px; margin-top: 14px; }
+  .actions { display: grid; gap: 10px; margin-top: 10px; transform: translateY(var(--pos-start, 0px)); }
   .panel button, .copybox button {
     font: inherit; font-weight: 800; font-size: 1.05rem; border: 0; border-radius: 16px; min-height: 56px; cursor: pointer;
     padding: 0 22px;
   }
   .panel button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-  .go { background: var(--yolk); color: var(--yolk-ink); }
-  .stop { background: var(--panel); color: var(--ink); border: 2px solid var(--line); }
-  .go.alarm { background: var(--alert); color: #fff; }
-  .tip { margin: 10px 0 0; font-size: .82rem; color: var(--muted); text-align: center; }
+  .go, .stop, .go.alarm { background: transparent; border: 0; }
+  .go { color: var(--yolk); font-size: 1.6rem !important; letter-spacing: .01em; }
+  .go.alarm { color: var(--alert); }
+  .stop { color: var(--muted); }
+  .go:active, .stop:active { opacity: .6; }
+  .go:not(.alarm) { animation: breathe 2.6s ease-in-out infinite; }
+  /* The egg is the start button: "Start klokka" sits in 2D on top of the egg, under the time */
+  .egg-start {
+    position: absolute; left: 0; right: 0; top: var(--start-y, 60%); margin: 0; text-align: center; pointer-events: none;
+    color: var(--yolk); font-weight: 800; font-size: 1rem; line-height: 1.1; letter-spacing: .01em;
+    animation: breathe 2.6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) { .egg-start { animation: none; } }
+  /* While setting the timer the Start button is not needed (tap the egg), but it keeps its space so nothing moves */
+  body:not(.running):not(.done) .go { visibility: hidden; }
+  @keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+  @media (prefers-reduced-motion: reduce) { .go:not(.alarm) { animation: none; } }
+  .tip { margin: 8px 0 0; font-size: .82rem; color: var(--muted); text-align: center; }
+
+  /* Size picker: − and + on each side of the big egg, the name under it */
+  .sizer { position: absolute; inset: 0; pointer-events: none; }
+  .szbtn, .stepbtn {
+    width: 52px; height: 52px; border-radius: 12px; border: 0; background: transparent;
+    color: var(--ink); font-family: inherit; font-size: 36px; font-weight: 500; line-height: 1; padding: 0 0 4px; cursor: pointer; pointer-events: auto;
+    transition: opacity .2s, transform .12s;
+  }
+  .szbtn { position: absolute; top: var(--egg-y, 50%); transform: translate(-50%, -50%); transition: opacity .35s, transform .12s, top .35s cubic-bezier(.3, 1.1, .4, 1); }
+  /* Intro tour: parts are hidden until their turn (beats the breathing animation on "Start klokka") */
+  .thide { opacity: 0 !important; pointer-events: none !important; }
+  .stepbtn { transition: opacity .35s, transform .12s; }
+  .szlabel, .egg-start, .stepper, .steplabel { transition: opacity .35s ease, top .35s cubic-bezier(.3, 1.1, .4, 1); }
+  .szbtn:active { transform: translate(-50%, -50%) scale(.85); opacity: .6; }
+  .panel .stepbtn { min-height: 0; padding: 0 0 4px; border-radius: 12px; font-size: 36px; font-weight: 500; background: transparent; color: var(--ink); }
+  .stepbtn:active { transform: scale(.85); opacity: .6; }
+  .szbtn:disabled, .stepbtn:disabled { opacity: .2; cursor: default; }
+  .szbtn:focus-visible, .stepbtn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  /* Yolk picker: − yolk + in the panel */
+  .stepper { display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; gap: 12px; width: var(--row-w); max-width: 100%; margin: 0 auto; transform: translateY(var(--pos-yolk, 0px)); }
+  .yolkbox { position: relative; height: 74px; }
+  #yolkCanvas { position: absolute; left: 50%; top: 50%; width: 220px; height: 108px; transform: translate(-50%, -50%); pointer-events: none; display: block; }
+  .stepbtn { position: relative; z-index: 1; }
+  .altblock { margin: 0 auto; width: var(--alt-w, 290px); max-width: 100%; transform: translateY(calc(var(--pos-alt, 0px) + var(--tour-alt, 0px))); transition: transform .6s cubic-bezier(.3, 1.05, .4, 1), opacity .45s ease; }
+  /* While setting the timer there is no need for the hint under Start */
+  body:not(.running):not(.done) .tip { display: none; } /* room for the splash, overlapping a little */
+  /* The label sits above the floating yolk, with a halo in the page color so it always reads */
+  .steplabel { transform: translateY(calc(var(--pos-yolk, 0px) + var(--txt-yolk, 0px))); position: relative; z-index: 1; text-shadow: 0 0 3px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg); margin: 0 0 2px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+  .steplabel strong { font-size: 1rem; font-weight: 800; }
+  #sizeDown { left: var(--minus-x, 14%); }
+  #sizeUp { left: var(--plus-x, 86%); }
+  .szlabel {
+    position: absolute; left: 0; right: 0; top: var(--label-y, 85%); margin: 0; text-align: center;
+    display: flex; flex-direction: column; align-items: center; transition: opacity .35s ease, top .3s cubic-bezier(.3, 1.4, .5, 1);
+  }
+  .szlabel strong { font-size: 1rem; font-weight: 800; }
 
   /* While the egg boils: hide the settings, give the egg the room */
-  body.running .settings, body.done .settings { display: none; }
+  body.running .settings, body.done .settings, body.running .sizer, body.done .sizer { display: none; }
 
   .fps { position: fixed; left: 8px; top: calc(env(safe-area-inset-top, 0px) + 6px); font: 600 11px/1.2 ui-monospace, monospace; background: rgba(0,0,0,.6); color: #fff; padding: 3px 6px; border-radius: 6px; z-index: 9; pointer-events: none; }
   /* Lab (?lab) */
@@ -99,59 +279,66 @@
   .copybox textarea { width: 100%; height: 40dvh; font: 12px/1.3 ui-monospace, monospace; -webkit-user-select: text; user-select: text; }
   .copybox button { margin-top: 8px; min-height: 40px; width: 100%; background: var(--yolk); color: var(--yolk-ink); }
   /* Game score and floating "+1" labels */
-  .score { position: absolute; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 74px); text-align: center; font-weight: 800; font-size: 1rem; color: var(--muted); pointer-events: none; font-variant-numeric: tabular-nums; }
-  .score.final { font-size: 1.5rem; color: var(--ink); }
+  .score { position: absolute; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 56px); display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; color: var(--ink); pointer-events: none; font-variant-numeric: tabular-nums; }
+  .score-num { font-family: var(--display); font-weight: 800; font-size: 2.6rem; line-height: 1; }
+  .score-line { font-family: var(--text); font-weight: 700; font-size: .85rem; color: var(--muted); }
+  .score.final { top: calc(env(safe-area-inset-top, 0px) + 84px); }
+  .score.final .score-num { font-size: 3.4rem; }
   .float { position: fixed; z-index: 5; transform: translate(-50%, -50%); font-weight: 800; font-size: 1.1rem; color: var(--yolk); pointer-events: none; animation: floatUp 1s ease-out forwards; text-shadow: 0 1px 0 rgba(0,0,0,.15); }
   .float.minus { color: var(--alert); }
   @keyframes floatUp { from { opacity: 1; transform: translate(-50%, -50%); } to { opacity: 0; transform: translate(-50%, -150%); } }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>
 </head>
-<body>
+<body class="intro">
+<div id="splash" aria-hidden="true"></div>
+<div id="tourTitle" aria-hidden="true"><h1>Trillekok</h1></div>
+<p id="hint" class="hint" aria-live="polite">Start the timer when the egg goes into boiling water.</p>
 <div id="scene"></div>
 <div class="app">
   <header>
-    <button class="labbtn" id="labBtn" type="button" aria-label="Åpne eggelaben">⚙︎</button>
-    <h1>Eggklokke</h1>
-    <p class="sub" id="sub">Start klokka når egget går ned i kokende vann.</p>
+    <button class="labbtn" id="labBtn" type="button" aria-label="Settings">⋯</button>
+    <h1 class="sr-only">Trillekok</h1>
+    <p class="sub" id="sub">Start the timer when the egg goes into boiling water.</p>
+    <div class="altblock settings thide">
+      <div class="alt-head" id="altHead" data-state="zero">
+        <label class="alt-label" for="alt">Altitude</label>
+        <output id="altOut" for="alt">0 m</output>
+        <p class="alt-info" id="altNote"></p>
+      </div>
+      <div class="altwrap">
+        <canvas id="terrain" aria-hidden="true"></canvas>
+        <input type="range" id="alt" min="0" max="2500" step="50" value="0">
+      </div>
+    </div>
   </header>
+  <div class="spacer" id="spacer"></div>
 
   <div id="stage" aria-label="Egget, som du kan rulle rundt på skjermen">
     <div class="loading">Varmer opp vannet …</div>
+    <div class="sizer" id="sizer" hidden>
+      <button class="szbtn thide" id="sizeDown" type="button" aria-label="Mindre egg">−</button>
+      <button class="szbtn thide" id="sizeUp" type="button" aria-label="Større egg">+</button>
+      <p class="szlabel thide" aria-live="polite"><strong id="sizeName">Medium egg</strong></p>
+      <p class="egg-start thide" id="eggStart" aria-hidden="true">Start<br>timer</p>
+    </div>
   </div>
   <div class="sr-only" role="timer" id="srTime"></div>
   <div class="score" id="score" aria-live="polite"></div>
 
-  <div class="panel">
+  <div class="panel" id="panel">
     <div class="settings">
-      <fieldset>
-        <legend>Hvordan vil du ha egget?</legend>
-        <div class="seg">
-          <input type="radio" name="d" id="d-soft" value="soft" checked><label for="d-soft">Bløtkokt<small>rennende plomme</small></label>
-          <input type="radio" name="d" id="d-smile" value="smile"><label for="d-smile">Smilende<small>myk, kremet plomme</small></label>
-          <input type="radio" name="d" id="d-hard" value="hard"><label for="d-hard">Hardkokt<small>fast plomme</small></label>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Størrelse</legend>
-        <div class="seg">
-          <input type="radio" name="s" id="s-s" value="s"><label for="s-s">Lite<small>under 53 g</small></label>
-          <input type="radio" name="s" id="s-m" value="m" checked><label for="s-m">Medium<small>53–63 g</small></label>
-          <input type="radio" name="s" id="s-l" value="l"><label for="s-l">Stort<small>over 63 g</small></label>
-        </div>
-      </fieldset>
-
-      <div>
-        <div class="alt-head"><strong><label for="alt">Høyde over havet</label></strong><output id="altOut" for="alt">0 m</output></div>
-        <input type="range" id="alt" min="0" max="2500" step="50" value="0">
-        <p class="note" id="altNote">Vannet koker ved 100 °C.</p>
+      <p class="steplabel thide" aria-live="polite"><strong id="yolkName">Jammy</strong></p>
+      <div class="stepper thide">
+        <button class="stepbtn thide" id="yolkDown" type="button" aria-label="Bløtere plomme">−</button>
+        <div class="yolkbox"><canvas id="yolkCanvas" aria-hidden="true"></canvas></div>
+        <button class="stepbtn thide" id="yolkUp" type="button" aria-label="Fastere plomme">+</button>
       </div>
     </div>
 
     <div class="actions">
       <button class="go" id="go" type="button">Start</button>
-      <button class="stop" id="reset" type="button" hidden>Avbryt</button>
+      <button class="stop" id="reset" type="button" hidden>Cancel</button>
     </div>
     <p class="tip" id="tip">Dra på skjermen for å rulle egget.</p>
   </div>

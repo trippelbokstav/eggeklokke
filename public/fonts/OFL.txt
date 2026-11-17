@@ -1,0 +1,4 @@
+Sniglet (Haley Fiege) and Comfortaa (Johan Aakerlund) are licensed under the
+SIL Open Font License, Version 1.1. They may be bundled with this app.
+Full license text: https://openfontlicense.org
+Font files from Google Fonts (latin and latin-ext subsets only).

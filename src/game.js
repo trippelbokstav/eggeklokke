@@ -11,6 +11,7 @@ const mix = (a, b, t) => '#' + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - 
 // hooks: { digitColor() -> string, onPickup({ n, combo, eggs, bonus, x, z }), onTick(urgency, red) }
 export function createGame(world, P, hooks) {
   let active = false;
+  let paused = false;
   let eggs = 0;
   let bonus = 0;
   let combo = 0;
@@ -119,6 +120,7 @@ export function createGame(world, P, hooks) {
   return {
     start() {
       active = true;
+      paused = false;
       eggs = 0;
       bonus = 0;
       combo = 0;
@@ -133,7 +135,23 @@ export function createGame(world, P, hooks) {
     },
     stop() {
       active = false;
+      paused = false;
       world.game.clear();
+    },
+    // Cancel with a way back: hide the eggs but keep the score, streak and plan
+    pause() {
+      if (!active) return;
+      active = false;
+      paused = true;
+      world.game.clear();
+    },
+    // Back to the countdown: the same egg and dots come back, the score is as before
+    resume(now) {
+      if (!paused || !target) return false;
+      paused = false;
+      active = true;
+      show(now);
+      return true;
     },
     update(now) {
       if (!active || !target) return;
@@ -147,7 +165,7 @@ export function createGame(world, P, hooks) {
       }
       if (now - target.at < 300) return; // a fresh egg can't be taken the same instant it appears
       // Roll well over it: the big egg's middle must come close, the edge is not enough
-      if (dist(world.eggPos(), target) < P.pickup * P.eggWidth / 2) pick(now);
+      if (dist(world.eggPos(), target) < P.pickup * P.eggWidth * world.eggScale() / 2) pick(now);
     },
     // The egg hit a wall: lose points (one bounce sequence counts once)
     bump(now) {

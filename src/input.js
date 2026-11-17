@@ -100,6 +100,7 @@ export function createInput(stage, P) {
 
   // Drag: pull in the direction you want the egg to roll
   stage.addEventListener('pointerdown', (e) => {
+    if (e.target.closest && e.target.closest('button')) return;
     drag.active = true;
     drag.sx = e.clientX;
     drag.sy = e.clientY;

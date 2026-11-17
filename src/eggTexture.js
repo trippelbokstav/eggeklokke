@@ -3,7 +3,14 @@
 // A second canvas holds fine noise, used as a bump map for a slightly rough shell.
 import * as THREE from 'three';
 
-const FONT = '"Nunito", "Avenir Next", system-ui, sans-serif';
+// The display font for the time on the egg. A web font may arrive after the first paint,
+// so fontVersion goes into the repaint key: bump it (fontReady) and the egg repaints.
+export const FONT = '"Sniglet", "Nunito", "Avenir Next", system-ui, sans-serif';
+let fontVersion = 0;
+export function fontReady() { fontVersion++; }
+export const fontStamp = () => fontVersion;
+// The calmer text font, for the numbers on the small eggs in the game
+export const TEXT_FONT = '"Comfortaa", "Avenir Next", system-ui, sans-serif';
 
 // Small seeded random, so the dots stay in the same place every repaint
 function rng(seed) {
@@ -55,7 +62,7 @@ export function createEggTexture(W = 1024, H = 512) {
 
   // colors: { shell, dot, digit }, opts: { dotCount, dotSize, digitSize, digitRepeat }
   function paint(timeText, colors, opts) {
-    const key = [timeText, colors.shell, colors.dot, colors.digit, opts.dotCount, opts.dotSize, opts.digitSize, opts.digitRepeat].join('|');
+    const key = [fontVersion, timeText, colors.shell, colors.dot, colors.digit, opts.dotCount, opts.dotSize, opts.digitSize, opts.digitRepeat].join('|');
     if (key === last) return false;
     last = key;
 

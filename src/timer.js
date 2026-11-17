@@ -3,15 +3,26 @@
 // Seconds for a medium egg at sea level, straight from the fridge
 export const BASE = { soft: 360, smile: 450, hard: 600 };
 export const SIZE = { s: 0.9, m: 1, l: 1.1 };
-export const NAMES = { soft: 'bløtkokt', smile: 'smilende', hard: 'hardkokt' };
-export const SIZENAMES = { s: 'lite', m: 'medium', l: 'stort' };
 
 // Water boils about 1 °C lower per 300 m
 export function boilTemp(h) { return 100 - 0.0034 * h; }
 export function altFactor(h) { return Math.pow(2, (100 - boilTemp(h)) / 12); }
 
+// "My values": your own times for a medium egg at the altitude where you live.
+// Everything else (small/large egg, other altitudes) is worked out from there.
+let custom = { times: null, home: 0 };
+export function setCustom(c) { custom = { times: c.times || null, home: +c.home || 0 }; }
+
+// Standard times for a medium egg at a given altitude (what "My values" starts from)
+export function standardTimesAt(h) {
+  const f = altFactor(h);
+  return Object.fromEntries(Object.entries(BASE).map(([k, v]) => [k, Math.round(v * f / 5) * 5]));
+}
+
 export function totalSeconds(doneness, size, altitude) {
-  const t = BASE[doneness] * SIZE[size] * altFactor(altitude);
+  const t = custom.times
+    ? custom.times[doneness] * SIZE[size] * altFactor(altitude) / altFactor(custom.home)
+    : BASE[doneness] * SIZE[size] * altFactor(altitude);
   return Math.round(t / 5) * 5;
 }
 

@@ -2,7 +2,7 @@
 // seen straight from above. The edges of the screen are the walls.
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { createEggTexture } from './eggTexture.js';
+import { createEggTexture, TEXT_FONT, fontStamp } from './eggTexture.js';
 
 const STEP = 1 / 60;
 const WALL = 0.5;      // half thickness of the invisible walls
@@ -32,7 +32,8 @@ function toonGradient() {
 }
 
 // container: the full-screen element the canvas fills. focus: the free area where the egg rests (zero position).
-export async function createWorld(container, P, focus = container) {
+// bottomEl: the UI block at the bottom (the small eggs in the game stay above it)
+export async function createWorld(container, P, focus = container, bottomEl = null) {
   await RAPIER.init();
 
   // ---------- three.js ----------
@@ -83,14 +84,15 @@ export async function createWorld(container, P, focus = container) {
     c.height = 128;
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
+    // Always drawn on top: on a phone's depth buffer the flat label can otherwise hide under the egg
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
     mesh.rotation.x = -Math.PI / 2;
     mesh.rotation.z = 0;
     mesh.renderOrder = 10;
     let last = '';
     mesh.userData.draw = (text, color) => {
-      const key = text + color;
+      const key = text + color + fontStamp(); // repaint once the web font has arrived
       if (key === last) return;
       last = key;
       const ctx = c.getContext('2d');
@@ -99,9 +101,9 @@ export async function createWorld(container, P, focus = container) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       let size = 92;
-      ctx.font = `600 ${size}px "Nunito", "Avenir Next", system-ui, sans-serif`;
+      ctx.font = `700 ${size}px ${TEXT_FONT}`;
       const w = ctx.measureText(text).width;
-      if (w > 116) { size = Math.floor(size * 116 / w); ctx.font = `600 ${size}px "Nunito", "Avenir Next", system-ui, sans-serif`; }
+      if (w > 116) { size = Math.floor(size * 116 / w); ctx.font = `700 ${size}px ${TEXT_FONT}`; }
       ctx.fillText(text, 64, 68);
       tex.needsUpdate = true;
       dirty = true;
@@ -184,6 +186,12 @@ export async function createWorld(container, P, focus = container) {
   const tmpRot = new THREE.Quaternion();
   let eggCollider = null;
   let mass = 1;
+  // Egg size (small / medium / large): a scale that springs to its target, with a little overshoot
+  const size = { now: 1, vel: 0, target: 1, fit: 1 };
+  let liftCut = 0; // pixels taken off P.eggLift when there is no room up there (set from the UI)
+  let tourShift = 0; // pixels the resting egg is moved down during the intro tour
+  // fit: extra shrink while you set the timer, so even a large egg fits between the title and the panel
+  const shown = () => size.target * size.fit;
 
   // ---------- State ----------
   const tilt = { x: 0, z: 0 };
@@ -208,16 +216,46 @@ export async function createWorld(container, P, focus = container) {
     outline.geometry = geo;
     shadow.geometry = geo;
     minis.forEach((m) => { m.geometry = geo; });
+    buildCollider();
+    applyParams();
+  }
+
+  // Physics hull at the chosen egg size. Mass follows the volume (density 1), so a big egg is heavier.
+  function buildCollider() {
     if (eggCollider) world.removeCollider(eggCollider, true);
     // Low-res hull for physics: the egg still wobbles, but collisions stay cheap
-    const hull = new THREE.LatheGeometry(eggProfile(P.eggLength, P.eggWidth, P.eggPointy, 10), 14);
+    const s = size.target;
+    const hull = new THREE.LatheGeometry(eggProfile(P.eggLength * s, P.eggWidth * s, P.eggPointy, 10), 14);
     eggCollider = world.createCollider(
       RAPIER.ColliderDesc.convexHull(new Float32Array(hull.attributes.position.array)).setDensity(1),
       eggBody
     );
     hull.dispose();
+    eggCollider.setFriction(P.friction);
+    eggCollider.setRestitution(P.bounce);
     mass = eggBody.mass();
-    applyParams();
+  }
+
+  // Spring the visible size toward the target. Returns true while it moves.
+  function animateSize(dt) {
+    const goal = shown();
+    const d = goal - size.now;
+    if (Math.abs(d) < 1e-4 && Math.abs(size.vel) < 1e-3) {
+      if (size.now === goal) return false;
+      size.now = goal;
+      size.vel = 0;
+    } else {
+      // Semi-implicit Euler in small steps, so a stiff spring stays stable
+      const n = Math.ceil(dt / (1 / 240));
+      const h = dt / n;
+      for (let i = 0; i < n; i++) {
+        size.vel += ((goal - size.now) * P.sizeStiff - size.vel * P.sizeDamp) * h;
+        size.now += size.vel * h;
+      }
+    }
+    egg.scale.setScalar(size.now);
+    posePos.y = P.eggWidth / 2 * size.now; // keep it resting on the floor while it grows
+    return true;
   }
 
   // Live values from the lab
@@ -231,7 +269,7 @@ export async function createWorld(container, P, focus = container) {
     eggMat.bumpScale = P.rough * 2;
     ambient.intensity = Math.PI * (1 - P.shade);
     sun.intensity = Math.PI * P.shade;
-    posePos.y = P.eggWidth / 2;
+    posePos.y = P.eggWidth / 2 * size.now;
     outline.visible = P.outline > 0;
     outline.scale.setScalar(1 + P.outline * (1 + outlinePulse));
     shadow.visible = P.shadowOpacity > 0;
@@ -274,18 +312,18 @@ export async function createWorld(container, P, focus = container) {
     const dv = Math.hypot(v.x - prevVel.x - wg.x * STEP, v.z - prevVel.z - wg.z * STEP);
     prevVel.set(v.x, v.y, v.z);
     const tp = eggBody.translation();
-    const reach = P.eggLength * 0.75;
+    const reach = P.eggLength * size.now * 0.75;
     const nearWall = bounds.x - Math.abs(tp.x) < reach || bounds.z - Math.abs(tp.z) < reach;
     const threshold = 1.2;
     if (nearWall && dv > threshold && bumpHandler) bumpHandler(Math.min(1, (dv - threshold) / 4));
 
     // Safety: if the egg ends up well outside the screen (e.g. after a resize), put it back inside
     const p = eggBody.translation();
-    const m = P.eggLength / 2;
+    const m = P.eggLength * size.now / 2;
     if (Math.abs(p.x) > bounds.x + m || Math.abs(p.z) > bounds.z + m || p.y < -1) {
       eggBody.setTranslation({
         x: THREE.MathUtils.clamp(p.x, -bounds.x + m, bounds.x - m),
-        y: Math.max(p.y, P.eggWidth),
+        y: Math.max(p.y, P.eggWidth * size.now),
         z: THREE.MathUtils.clamp(p.z, -bounds.z + m, bounds.z - m)
       }, true);
     }
@@ -352,9 +390,9 @@ export async function createWorld(container, P, focus = container) {
     floorHalf.x = dist * Math.tan(hHalf);
     floorHalf.z = dist * Math.tan(vHalf);
     // Visible area at the height of the egg's middle, a little inside the edge
-    const atEgg = dist - P.eggWidth / 2;
+    const atEgg = dist - P.eggWidth * size.target / 2;
     // The walls sit outside the screen, so the egg can slip partly out of view before it bounces back
-    const out = P.wallOut * P.eggWidth;
+    const out = P.wallOut * P.eggWidth * size.target;
     const hx = atEgg * Math.tan(hHalf);
     const hz = atEgg * Math.tan(vHalf);
     placeWalls(hx + out, hz + out);
@@ -362,7 +400,8 @@ export async function createWorld(container, P, focus = container) {
     const r = focus.getBoundingClientRect();
     const c = container.getBoundingClientRect();
     posePos.x = (((r.left + r.width / 2) - c.left) / w * 2 - 1) * hx;
-    posePos.z = (((r.top + r.height / 2) - c.top) / h * 2 - 1) * hz;
+    // eggLift: rest a bit above the middle (pixels)
+    posePos.z = (((r.top + r.height / 2 - Math.max(0, P.eggLift - liftCut) + tourShift) - c.top) / h * 2 - 1) * hz;
   }
   const ro = new ResizeObserver(resize);
   ro.observe(container);
@@ -388,6 +427,7 @@ export async function createWorld(container, P, focus = container) {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     if (frameHook) frameHook(dt, now);
+    const sizing = animateSize(dt);
 
     acc += dt;
     let steps = 0;
@@ -421,7 +461,7 @@ export async function createWorld(container, P, focus = container) {
     egg.updateMatrixWorld();
 
     // Shadow: flatten the egg onto the floor, shift it down-right (away from the light)
-    const lift = Math.max(0, egg.position.y - P.eggWidth / 2);
+    const lift = Math.max(0, egg.position.y - P.eggWidth * size.now / 2);
     const off = P.shadowOffset * (1 + lift * 0.8);
     flatten.makeScale(1, 0.0001, 1);
     shift.makeTranslation(off, 0.002, off);
@@ -432,7 +472,7 @@ export async function createWorld(container, P, focus = container) {
     // When the egg lies still (zero position, or the phone on the counter) the GPU can rest.
     const animating = animateGame(dt);
     const moved = egg.position.distanceToSquared(drawnPos) > 1e-7 || 1 - Math.abs(egg.quaternion.dot(drawnRot)) > 1e-8;
-    if (moved || animating || dirty) {
+    if (moved || animating || sizing || dirty) {
       renderer.render(scene, camera);
       drawnPos.copy(egg.position);
       drawnRot.copy(egg.quaternion);
@@ -441,7 +481,7 @@ export async function createWorld(container, P, focus = container) {
     }
   }
 
-  return {
+  const api = {
     paint(text, colors, opts) { if (shell.paint(text, colors, opts)) dirty = true; },
     invalidate() { dirty = true; },
     setTilt(x, z) { tilt.x = x; tilt.z = z; },
@@ -471,6 +511,40 @@ export async function createWorld(container, P, focus = container) {
     },
     applyParams,
     buildEgg,
+    // Egg size as a scale (1 = medium). Springs there; the physics hull is rebuilt at once.
+    setSize(s, force = false) {
+      if (s === size.target && !force) return;
+      size.target = s;
+      buildCollider();
+      resize();
+    },
+    eggScale() { return size.now; },
+    // Re-measure the layout now (resting spot, walls), e.g. before placing UI around the egg
+    relayout() { resize(); },
+    // Shrink the shown egg while setting the timer (1 = full size, used while playing)
+    setFit(f) { size.fit = f; },
+    // Take this many pixels off the egg's lift (keeps its name clear of the block above)
+    setLiftCut(px) { if (px !== liftCut) { liftCut = px; resize(); } },
+    // Intro tour: move the resting egg (it glides there), hide/show it, and let it pop in from nothing
+    setTourShift(px) { if (px !== tourShift) { tourShift = px; resize(); } },
+    setEggVisible(v) { egg.visible = v; shadow.visible = v && P.shadowOpacity > 0; dirty = true; },
+    popIn() { size.now = 0.02; size.vel = 0; dirty = true; },
+    // Put the resting egg at its spot at once (no glide), e.g. before it pops in
+    snapToPose() {
+      eggBody.setTranslation({ x: posePos.x, y: posePos.y, z: posePos.z }, true);
+      eggBody.setRotation({ x: poseRot.x, y: poseRot.y, z: poseRot.z, w: poseRot.w }, true);
+      readBody(currPos, currRot);
+      prevPos.copy(currPos);
+      prevRot.copy(currRot);
+      dirty = true;
+    },
+    // The resting egg on screen, in pixels: center, and how far down its bottom end reaches (at the target size)
+    poseScreen() {
+      const c = api.game.project(posePos.x, posePos.z);
+      const b = api.game.project(posePos.x, posePos.z + P.eggLength * shown() / 2);
+      const ppu = (b.y - c.y) / (P.eggLength * shown() / 2); // screen pixels per scene unit
+      return { x: c.x, y: c.y, bottom: b.y, ppu };
+    },
     jump(power = 1) {
       eggBody.applyImpulse({
         x: (Math.random() - 0.5) * 2 * mass * power,
@@ -532,7 +606,8 @@ export async function createWorld(container, P, focus = container) {
         const X = (px) => ((px - c.left) / c.width * 2 - 1) * floorHalf.x;
         const Z = (py) => ((py - c.top) / c.height * 2 - 1) * floorHalf.z;
         // Whole screen width, from the top of the screen down to the panel (the egg may roll a bit outside)
-        return { x0: -floorHalf.x, x1: floorHalf.x, z0: -floorHalf.z, z1: Z(r.bottom) };
+        const b = bottomEl ? Math.min(r.bottom, bottomEl.getBoundingClientRect().top) : r.bottom;
+        return { x0: -floorHalf.x, x1: floorHalf.x, z0: -floorHalf.z, z1: Z(b) };
       },
       // Floor point -> screen pixels (for the floating "+1" labels)
       project(x, z) {
@@ -550,4 +625,5 @@ export async function createWorld(container, P, focus = container) {
     // For debugging in the console: window.__egg
     debug: { world, eggBody, scene, camera, renderer, floor }
   };
+  return api;
 }
