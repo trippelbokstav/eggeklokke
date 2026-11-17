@@ -8,6 +8,9 @@ import * as THREE from 'three';
 export const FONT = '"Sniglet", "Nunito", "Avenir Next", system-ui, sans-serif';
 let fontVersion = 0;
 export function fontReady() { fontVersion++; }
+export const fontStamp = () => fontVersion;
+// The calmer text font, for the numbers on the small eggs in the game
+export const TEXT_FONT = '"Comfortaa", "Avenir Next", system-ui, sans-serif';
 
 // Small seeded random, so the dots stay in the same place every repaint
 function rng(seed) {

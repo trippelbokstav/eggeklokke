@@ -258,7 +258,7 @@ function floatLabel(e) {
 stage.classList.add('ready');
 
 // The display font (Sniglet) loads from the web: repaint the egg's time once it is there
-if (document.fonts) document.fonts.load('800 100px Sniglet').then(() => { fontReady(); world.invalidate(); }).catch(() => {});
+if (document.fonts) Promise.all([document.fonts.load('800 100px Sniglet'), document.fonts.load('700 100px Comfortaa')]).then(() => { fontReady(); world.invalidate(); }).catch(() => {});
 
 // Intro: keep the title up for 2 seconds from page start (the 3D loaded behind it), then let the app in
 setTimeout(() => {

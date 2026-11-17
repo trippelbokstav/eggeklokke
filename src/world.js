@@ -2,7 +2,7 @@
 // seen straight from above. The edges of the screen are the walls.
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { createEggTexture, FONT } from './eggTexture.js';
+import { createEggTexture, TEXT_FONT, fontStamp } from './eggTexture.js';
 
 const STEP = 1 / 60;
 const WALL = 0.5;      // half thickness of the invisible walls
@@ -91,7 +91,7 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
     mesh.renderOrder = 10;
     let last = '';
     mesh.userData.draw = (text, color) => {
-      const key = text + color;
+      const key = text + color + fontStamp(); // repaint once the web font has arrived
       if (key === last) return;
       last = key;
       const ctx = c.getContext('2d');
@@ -100,9 +100,9 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       let size = 92;
-      ctx.font = `800 ${size}px ${FONT}`;
+      ctx.font = `700 ${size}px ${TEXT_FONT}`;
       const w = ctx.measureText(text).width;
-      if (w > 116) { size = Math.floor(size * 116 / w); ctx.font = `800 ${size}px ${FONT}`; }
+      if (w > 116) { size = Math.floor(size * 116 / w); ctx.font = `700 ${size}px ${TEXT_FONT}`; }
       ctx.fillText(text, 64, 68);
       tex.needsUpdate = true;
       dirty = true;
