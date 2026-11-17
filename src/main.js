@@ -129,6 +129,26 @@ function updateTip() {
   else tipEl.textContent = input.gyroActive ? t('tipTilt') : t('tipDrag');
 }
 
+// Score: the number big in the display font, a line under it in the text font
+let shownScore = '';
+function showScore(n, line = '') {
+  const key = n === null ? '' : n + '|' + line;
+  if (key === shownScore) return;
+  shownScore = key;
+  scoreEl.innerHTML = '';
+  if (n === null) return;
+  const big = document.createElement('span');
+  big.className = 'score-num';
+  big.textContent = n;
+  scoreEl.appendChild(big);
+  if (line) {
+    const small = document.createElement('span');
+    small.className = 'score-line';
+    small.textContent = line;
+    scoreEl.appendChild(small);
+  }
+}
+
 function statusLine() { return t(doneKey) + ' · ' + t({ s: 'sizeS', m: 'sizeM', l: 'sizeL' }[sizeKey]); }
 
 // Put every fixed text on the page in the chosen language
@@ -183,7 +203,7 @@ function start() {
   if (world) { world.setFit(1); world.setPosed(false); }
   if (game && P.gameOn) game.start();
   scoreEl.className = 'score';
-  scoreEl.textContent = '';
+  showScore(null);
   updateTip();
   try {
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { wake = w; }).catch(() => {});
@@ -209,10 +229,11 @@ function finish() {
   if (played) {
     const st = game.stats(performance.now());
     scoreEl.className = 'score final';
-    const parts = [`🥚 ${st.eggs}`];
+    // Big total, and the breakdown under it: "5 eggs collected · + 3 bonus · − 1 bumps"
+    const parts = [t('collected', { n: st.eggs })];
     if (st.bonus > 0) parts.push(`+ ${st.bonus} ${t('bonus')}`);
     if (st.penalties > 0) parts.push(`− ${st.penalties} ${t('bumps')}`);
-    scoreEl.textContent = parts.length > 1 ? `${parts.join(' ')} = ${st.total}` : t('collected', { n: st.eggs });
+    showScore(st.total, parts.join('  ·  '));
   }
 }
 
@@ -229,7 +250,7 @@ function reset() {
   subEl.textContent = t('introSub');
   if (game) game.stop();
   scoreEl.className = 'score';
-  scoreEl.textContent = '';
+  showScore(null);
   if (world) world.setPosed(true);
   if (world) placeSizer();
   updateTip();
@@ -496,7 +517,8 @@ world.start((dt, now) => {
     if (game.active) {
       game.update(now);
       const st = game.stats(now);
-      scoreEl.textContent = st.eggs === 0 && st.penalties === 0 ? '' : (st.streak > 1 ? `🥚 ${st.total}  ·  ${t('streak')} ×${st.streak}` : `🥚 ${st.total}`);
+      if (st.eggs === 0 && st.penalties === 0) showScore(null);
+      else showScore(st.total, st.streak > 1 ? `${t('streak')} ×${st.streak}` : '');
     }
     if (remaining <= 0) finish();
   } else if (done) {
