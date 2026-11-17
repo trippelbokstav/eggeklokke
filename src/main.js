@@ -407,7 +407,8 @@ function tickUndo() {
   if (ends !== undoEndsSec) {
     undoEndsSec = ends;
     const el = hintEl.querySelector('.undo-ends');
-    if (el) el.textContent = t('endsIn', { n: ends });
+    // Only the last 10 seconds: then it's time to choose
+    if (el) { el.textContent = t('endsIn', { n: ends }); el.classList.toggle('on', ends <= 10); }
   }
 }
 function clearUndo() {
