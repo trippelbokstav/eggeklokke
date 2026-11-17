@@ -25,6 +25,7 @@ export function createLab(P, world, diag) {
   const relayout = () => { saveParams(P); if (diag && diag.layout) diag.layout(); };
   const pos = gui.addFolder('Plassering');
   pos.add(P, 'posAlt', -150, 150, 1).name('høyde-blokka (px)').onChange(relayout);
+  pos.add(P, 'altWidth', 160, 400, 1).name('høyde-bredde (px)').onChange(relayout);
   pos.add(P, 'eggLift', -150, 150, 1).name('egget: løft (px)').onChange(relayout);
   pos.add(P, 'posYolk', -150, 150, 1).name('plommeraden (px)').onChange(relayout);
   pos.add(P, 'posStart', -150, 150, 1).name('Start (px)').onChange(relayout);

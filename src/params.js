@@ -9,6 +9,7 @@ export const DEFAULT_PARAMS = {
   // Placement on the setup screen (pixels, + = down). The egg is lifted (+ = up).
   eggLift: 60,            // the resting egg sits this far above the screen middle
   posAlt: -15,              // altitude block (label, mountains, slider)
+  altWidth: 290,          // width of the altitude slider and mountains (pixels)
   posYolk: -75,             // yolk row (yolk, − +, its name)
   posStart: -40,            // Start
   // Text (pixels, + = down)

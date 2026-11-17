@@ -303,6 +303,7 @@ sizer.hidden = false;
 function applyLayout() {
   const root = document.documentElement.style;
   root.setProperty('--pos-alt', P.posAlt + 'px');
+  root.setProperty('--alt-w', P.altWidth + 'px');
   root.setProperty('--pos-yolk', P.posYolk + 'px');
   root.setProperty('--pos-start', P.posStart + 'px');
   root.setProperty('--txt-alt', P.txtAlt + 'px');
