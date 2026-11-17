@@ -8,7 +8,9 @@ import { haptic, hapticDiag } from './native.js';
 import { sound, unlockAudio } from './sound.js';
 import { createYolk, YOLK_STATES } from './yolk.js';
 import { createTerrain } from './terrain.js';
-import { totalSeconds, fmt, boilTemp, altFactor, NAMES, SIZENAMES } from './timer.js';
+import { totalSeconds, fmt, boilTemp, altFactor, setCustom } from './timer.js';
+import { setLang, t, num } from './i18n.js';
+import { loadSettings, saveSettings, createSettingsSheet } from './settings.js';
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage');
@@ -26,6 +28,16 @@ const scoreEl = $('score');
 // Values tuned in the lab are saved in this browser and used every time.
 const isLab = new URLSearchParams(location.search).has('lab');
 const P = loadParams(true);
+
+// Settings saved on this phone: look, language, my own times + home altitude, last size and yolk
+const S = loadSettings();
+setLang(S.lang);
+setCustom(S);
+function applyThemeAttr() {
+  if (S.theme === 'system') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = S.theme;
+}
+applyThemeAttr();
 
 // ---------- Small color helpers ----------
 const hexToRgb = (h) => {
@@ -45,17 +57,17 @@ const edgeColor = (p) => (p < 0.5 ? mix(P.outlineStart, P.outlineMid, p * 2) : m
 
 // Egg size: picked with − and + around the big egg (the egg itself grows)
 const SIZES = ['s', 'm', 'l'];
-let sizeKey = 'm';
+let sizeKey = ['s', 'm', 'l'].includes(S.size) ? S.size : 'm';
 const currentTotal = () => totalSeconds(doneKey, sizeKey, +altEl.value);
 
 // Yolk: picked with − and + around a morphing yolk (soft / smiling / hard)
-const DONE_NAME = { soft: 'Bløtkokt', smile: 'Smilende', hard: 'Hardkokt' };
-let doneKey = 'smile';
+let doneKey = YOLK_STATES.includes(S.done) ? S.done : 'smile';
 const yolk = createYolk($('yolkCanvas'), P);
 function setDone(k) {
   doneKey = k;
   yolk.set(k);
-  $('yolkName').textContent = DONE_NAME[k];
+  $('yolkName').textContent = t(k);
+  if (S.done !== k) { S.done = k; saveSettings(S); }
   $('yolkDown').disabled = k === 'soft';
   $('yolkUp').disabled = k === 'hard';
 }
@@ -70,7 +82,8 @@ $('yolkDown').addEventListener('click', () => stepDone(-1));
 $('yolkUp').addEventListener('click', () => stepDone(1));
 setDone(doneKey);
 
-// Altitude: a terrain line grows out of the slider track as you drag
+// Altitude: starts at the altitude where you live (My values). A terrain line grows out of the slider track.
+altEl.value = S.home;
 const terrain = createTerrain($('terrain'), altEl, P);
 
 // ---------- State ----------
@@ -112,15 +125,39 @@ document.addEventListener('pointerdown', () => { if (!unlocked) { unlocked = tru
 document.addEventListener('click', askGyro, { capture: true });
 
 function updateTip() {
-  if (!running && !done) tipEl.textContent = 'Trykk Start, så våkner egget.';
-  else tipEl.textContent = input.gyroActive ? 'Vipp telefonen for å rulle egget.' : 'Dra på skjermen for å rulle egget.';
+  if (!running && !done) tipEl.textContent = t('tipStart');
+  else tipEl.textContent = input.gyroActive ? t('tipTilt') : t('tipDrag');
+}
+
+function statusLine() { return t(doneKey) + ' · ' + t({ s: 'sizeS', m: 'sizeM', l: 'sizeL' }[sizeKey]); }
+
+// Put every fixed text on the page in the chosen language
+function applyLang() {
+  const set = (sel, text) => { const el = document.querySelector(sel); if (el) el.textContent = text; };
+  set('#splash p', t('introSub'));
+  set('.alt-label', t('altitude'));
+  const es = $('eggStart');
+  if (es) es.innerHTML = t('start1') + '<br>' + t('start2');
+  if (!done) goBtn.textContent = t('start1'); else goBtn.textContent = t('stopAlarm');
+  resetBtn.textContent = t('cancel');
+  $('sizeDown').setAttribute('aria-label', t('ariaSmaller'));
+  $('sizeUp').setAttribute('aria-label', t('ariaLarger'));
+  $('yolkDown').setAttribute('aria-label', t('ariaSofter'));
+  $('yolkUp').setAttribute('aria-label', t('ariaFirmer'));
+  $('labBtn').setAttribute('aria-label', t('settings'));
+  $('yolkName').textContent = t(doneKey);
+  const sn = $('sizeName');
+  if (sn) sn.textContent = t({ s: 'sizeS', m: 'sizeM', l: 'sizeL' }[sizeKey]);
+  subEl.textContent = running ? statusLine() : done ? t('doneMsg') : t('introSub');
+  refreshIdle();
+  updateTip();
 }
 
 function refreshIdle() {
   const h = +altEl.value;
   altOut.textContent = h + ' m';
   const extra = Math.round((altFactor(h) - 1) * 100);
-  altNote.textContent = 'Koker ved ' + boilTemp(h).toFixed(1).replace('.', ',') + ' °C' + (extra > 0 ? ' · ' + extra + ' % lengre tid' : '');
+  altNote.textContent = t('boilsAt', { t: num(boilTemp(h)) }) + (extra > 0 ? ' · ' + t('longer', { p: extra }) : '');
 }
 
 // Altitude heading: the label at 0 m, only the number while dragging, the info slides in when you let go
@@ -138,7 +175,7 @@ function start() {
   document.body.classList.add('running');
   goBtn.hidden = true;
   resetBtn.hidden = false;
-  subEl.textContent = NAMES[doneKey].charAt(0).toUpperCase() + NAMES[doneKey].slice(1) + ', ' + SIZENAMES[sizeKey] + ' egg';
+  subEl.textContent = statusLine();
   sound.beep();
   haptic.press();
   input.touch();
@@ -157,9 +194,9 @@ function finish() {
   running = false;
   done = true;
   document.body.classList.add('done');
-  subEl.textContent = 'Egget er ferdig! Ta det opp og skyll i kaldt vann.';
+  subEl.textContent = t('doneMsg');
   goBtn.hidden = false;
-  goBtn.textContent = 'Stopp alarmen';
+  goBtn.textContent = t('stopAlarm');
   goBtn.classList.add('alarm');
   resetBtn.hidden = true;
   alarmStart = performance.now();
@@ -172,10 +209,10 @@ function finish() {
   if (played) {
     const st = game.stats(performance.now());
     scoreEl.className = 'score final';
-    const parts = [`${st.eggs} egg`];
-    if (st.bonus > 0) parts.push(`+ ${st.bonus} bonus`);
-    if (st.penalties > 0) parts.push(`− ${st.penalties} dult`);
-    scoreEl.textContent = parts.length > 1 ? `${parts.join(' ')} = ${st.total}` : `${st.eggs} egg samlet`;
+    const parts = [`🥚 ${st.eggs}`];
+    if (st.bonus > 0) parts.push(`+ ${st.bonus} ${t('bonus')}`);
+    if (st.penalties > 0) parts.push(`− ${st.penalties} ${t('bumps')}`);
+    scoreEl.textContent = parts.length > 1 ? `${parts.join(' ')} = ${st.total}` : t('collected', { n: st.eggs });
   }
 }
 
@@ -186,10 +223,10 @@ function reset() {
   wake = null;
   document.body.classList.remove('running', 'done');
   goBtn.hidden = false;
-  goBtn.textContent = 'Start';
+  goBtn.textContent = t('start1');
   goBtn.classList.remove('alarm');
   resetBtn.hidden = true;
-  subEl.textContent = 'Start klokka når egget går ned i kokende vann.';
+  subEl.textContent = t('introSub');
   if (game) game.stop();
   scoreEl.className = 'score';
   scoreEl.textContent = '';
@@ -220,8 +257,8 @@ stage.addEventListener('click', (e) => {
 });
 altEl.addEventListener('input', refreshIdle);
 
-refreshIdle();
-updateTip();
+if (+altEl.value > 0) altHead.dataset.state = 'rest';
+applyLang();
 
 // ---------- 3D ----------
 let world = null;
@@ -276,11 +313,12 @@ setTimeout(() => {
 const sizer = $('sizer');
 const sizeDown = $('sizeDown');
 const sizeUp = $('sizeUp');
+const SIZE_KEY = { s: 'sizeS', m: 'sizeM', l: 'sizeL' };
 const sizeScale = (k) => (k === 's' ? P.sizeSmall : k === 'l' ? P.sizeLarge : 1);
 function setSize(k, force = false) {
   sizeKey = k;
-  const name = SIZENAMES[k];
-  $('sizeName').textContent = name.charAt(0).toUpperCase() + name.slice(1) + ' egg';
+  $('sizeName').textContent = t(SIZE_KEY[k]);
+  if (S.size !== k) { S.size = k; saveSettings(S); }
   sizeDown.disabled = k === 's';
   sizeUp.disabled = k === 'l';
   world.setSize(sizeScale(k), force);
@@ -348,6 +386,8 @@ window.__egg = { ...world.debug, world, P, game, yolk, skip(s) { if (running) en
 
 function applyTheme() {
   theme = { alert: cssVar('--alert') || '#C2410C', bg: cssVar('--bg') || '#E3ECEF' };
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = theme.bg;
   world.setShadowColor(cssVar('--ink'));
   terrain.setColor(cssVar('--muted'));
   world.game.setDotColors(P.digitColor, P.lineColor);
@@ -397,8 +437,17 @@ async function toggleLab() {
   }
   lab.show(lab._hidden);
 }
-$('labBtn').addEventListener('click', toggleLab);
 if (isLab) toggleLab();
+
+// ---------- Settings (⋯ in the corner) ----------
+const settingsSheet = createSettingsSheet(S, (what) => {
+  if (what === 'theme') { applyThemeAttr(); applyTheme(); }
+  if (what === 'lang') { setLang(S.lang); applyLang(); }
+  if (what === 'times' || what === 'home') setCustom(S);
+  if (what === 'home' && !running && !done) { altEl.value = S.home; altEl.dispatchEvent(new Event('input')); altEl.dispatchEvent(new Event('change')); }
+  refreshIdle();
+}, toggleLab);
+$('labBtn').addEventListener('click', () => settingsSheet.open());
 
 // FPS meter: add ?fps to the address
 const fpsEl = new URLSearchParams(location.search).has('fps') ? document.createElement('div') : null;
@@ -447,7 +496,7 @@ world.start((dt, now) => {
     if (game.active) {
       game.update(now);
       const st = game.stats(now);
-      scoreEl.textContent = st.eggs === 0 && st.penalties === 0 ? '' : (st.streak > 1 ? `🥚 ${st.total}  ·  rekke ×${st.streak}` : `🥚 ${st.total}`);
+      scoreEl.textContent = st.eggs === 0 && st.penalties === 0 ? '' : (st.streak > 1 ? `🥚 ${st.total}  ·  ${t('streak')} ×${st.streak}` : `🥚 ${st.total}`);
     }
     if (remaining <= 0) finish();
   } else if (done) {

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nb">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="theme-color" content="#FFE49A">
@@ -27,8 +27,14 @@
   #splash h1, .alt-head output { font-family: var(--display) !important; font-weight: 800; }
   .score, .float { font-weight: 700; }
   .alt-label, .szlabel strong, .steplabel strong, .egg-start, .go, .stop, .szbtn, .stepbtn { font-weight: 700; }
+  /* Dark: follows the phone (System), or the choice in Settings (data-theme on <html>) */
+  :root[data-theme="dark"] {
+      --bg: #2B1F06; --panel: #3A2A0C; --ink: #FFE9B0; --muted: #C9A55A;
+      --line: #5A4413; --yolk: #FF9A2E; --yolk-ink: #2A1D00; --track: #46340F; --alert: #FF7A45;
+      color-scheme: dark;
+  }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --bg: #2B1F06; --panel: #3A2A0C; --ink: #FFE9B0; --muted: #C9A55A;
       --line: #5A4413; --yolk: #FF9A2E; --yolk-ink: #2A1D00; --track: #46340F; --alert: #FF7A45;
     }
@@ -82,6 +88,43 @@
     background: transparent; color: var(--muted); font-size: 22px; line-height: 40px; cursor: pointer; padding: 0;
   }
   .labbtn:active { background: var(--track); }
+  .labbtn { font-size: 26px; letter-spacing: 1px; }
+
+  /* Settings sheet */
+  #settings {
+    position: fixed; inset: 0; z-index: 2600; background: color-mix(in srgb, var(--ink) 25%, transparent);
+    display: flex; align-items: flex-end; justify-content: center; opacity: 0; transition: opacity .25s ease;
+  }
+  #settings[hidden] { display: none; } /* display:flex above would otherwise beat the hidden attribute */
+  #settings.open { opacity: 1; }
+  #settings .sheet {
+    width: 100%; max-width: 520px; max-height: 88dvh; overflow-y: auto; background: var(--bg); color: var(--ink);
+    border-radius: 22px 22px 0 0; padding: 14px 22px calc(env(safe-area-inset-bottom, 0px) + 24px);
+    transform: translateY(24px); transition: transform .3s cubic-bezier(.2, .9, .3, 1);
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  #settings.open .sheet { transform: none; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; }
+  .sheet h2 { margin: 0; font-size: 1.3rem; font-family: var(--display); font-weight: 800; }
+  .sheet h3 { margin: 0 0 8px; font-size: .85rem; font-weight: 700; color: var(--muted); }
+  .sheet section { display: flex; flex-direction: column; }
+  .sheet button { font-family: var(--text); color: var(--ink); cursor: pointer; }
+  .sheet-close { width: 40px; height: 40px; border: 0; background: transparent; font-size: 20px; border-radius: 12px; }
+  .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .seg3 button { border: 2px solid var(--line); background: transparent; border-radius: 12px; padding: 10px 4px; font-weight: 700; font-size: .9rem; }
+  .seg3 button[aria-pressed="true"] { background: var(--yolk); border-color: var(--yolk); color: var(--bg); }
+  .sheet select { font: 700 1rem var(--text); color: var(--ink); background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+  .sheet-note { margin: 0 0 8px; font-size: .8rem; line-height: 1.45; color: var(--muted); }
+  .vrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .vrow > span { font-weight: 700; font-size: .95rem; }
+  .vstep { display: flex; align-items: center; gap: 4px; }
+  .vstep button { width: 40px; height: 40px; border: 0; background: transparent; font-size: 24px; font-weight: 500; border-radius: 10px; }
+  .vstep button:active { opacity: .5; }
+  .vstep output { min-width: 4.2em; text-align: center; font-family: var(--display); font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .sheet-link { align-self: flex-start; border: 0; background: transparent; padding: 10px 0; font-weight: 700; font-size: .9rem; color: var(--yolk) !important; }
+  .sheet-link:disabled { opacity: .35; cursor: default; }
+  .sheet-list { margin: 0 0 6px; padding-left: 1.1em; font-size: .9rem; line-height: 1.6; }
+  .sheet button:focus-visible, .sheet select:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   h1 { font-size: 1.25rem; margin: 0; font-weight: 800; letter-spacing: -0.01em; }
   .sub { margin: 4px 0 0; font-size: .9rem; color: var(--muted); min-height: 1.2em; }
 
@@ -216,16 +259,16 @@
 </style>
 </head>
 <body class="intro">
-<div id="splash" aria-hidden="true"><div><h1>Eggklokke</h1><p>Start klokka når egget går ned i kokende vann.</p></div></div>
+<div id="splash" aria-hidden="true"><div><h1>Eggklokke</h1><p>Start the timer when the egg goes into boiling water.</p></div></div>
 <div id="scene"></div>
 <div class="app">
   <header>
-    <button class="labbtn" id="labBtn" type="button" aria-label="Åpne eggelaben">⚙︎</button>
+    <button class="labbtn" id="labBtn" type="button" aria-label="Settings">⋯</button>
     <h1 class="sr-only">Eggklokke</h1>
-    <p class="sub" id="sub">Start klokka når egget går ned i kokende vann.</p>
+    <p class="sub" id="sub">Start the timer when the egg goes into boiling water.</p>
     <div class="altblock settings">
       <div class="alt-head" id="altHead" data-state="zero">
-        <label class="alt-label" for="alt">Høyde over havet</label>
+        <label class="alt-label" for="alt">Altitude</label>
         <output id="altOut" for="alt">0 m</output>
         <p class="alt-info" id="altNote"></p>
       </div>
@@ -243,7 +286,7 @@
       <button class="szbtn" id="sizeDown" type="button" aria-label="Mindre egg">−</button>
       <button class="szbtn" id="sizeUp" type="button" aria-label="Større egg">+</button>
       <p class="szlabel" aria-live="polite"><strong id="sizeName">Medium egg</strong></p>
-      <p class="egg-start" id="eggStart" aria-hidden="true">Start<br>klokka</p>
+      <p class="egg-start" id="eggStart" aria-hidden="true">Start<br>timer</p>
     </div>
   </div>
   <div class="sr-only" role="timer" id="srTime"></div>
@@ -251,7 +294,7 @@
 
   <div class="panel" id="panel">
     <div class="settings">
-      <p class="steplabel" aria-live="polite"><strong id="yolkName">Smilende</strong></p>
+      <p class="steplabel" aria-live="polite"><strong id="yolkName">Jammy</strong></p>
       <div class="stepper">
         <button class="stepbtn" id="yolkDown" type="button" aria-label="Bløtere plomme">−</button>
         <div class="yolkbox"><canvas id="yolkCanvas" aria-hidden="true"></canvas></div>
@@ -261,7 +304,7 @@
 
     <div class="actions">
       <button class="go" id="go" type="button">Start</button>
-      <button class="stop" id="reset" type="button" hidden>Avbryt</button>
+      <button class="stop" id="reset" type="button" hidden>Cancel</button>
     </div>
     <p class="tip" id="tip">Dra på skjermen for å rulle egget.</p>
   </div>
