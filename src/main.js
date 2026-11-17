@@ -154,7 +154,7 @@ function statusLine() { return t(doneKey) + ' · ' + t({ s: 'sizeS', m: 'sizeM',
 // Put every fixed text on the page in the chosen language
 function applyLang() {
   const set = (sel, text) => { const el = document.querySelector(sel); if (el) el.textContent = text; };
-  set('#hint', t('introSub'));
+  if (undo) { const u = hintEl.querySelector('.undo-text'); if (u) u.textContent = t('backToTimer'); } else if (tipsOn) hintEl.textContent = t(TIPS[(tipIdx + TIPS.length - 1) % TIPS.length]);
   set('.alt-label', t('altitude'));
   const es = $('eggStart');
   if (es) es.innerHTML = t('start1') + '<br>' + t('start2');
@@ -185,10 +185,12 @@ const altHead = $('altHead');
 altEl.addEventListener('input', () => { altHead.dataset.state = +altEl.value > 0 ? 'drag' : 'zero'; });
 altEl.addEventListener('change', () => { altHead.dataset.state = +altEl.value > 0 ? 'rest' : 'zero'; });
 
-function start() {
+// resumeFrom: { endAt, total } to continue a countdown that was cancelled by mistake
+function start(resumeFrom = null) {
   unlock();
-  total = currentTotal();
-  endAt = Date.now() + total * 1000;
+  clearUndo();
+  total = resumeFrom ? resumeFrom.total : currentTotal();
+  endAt = resumeFrom ? resumeFrom.endAt : Date.now() + total * 1000;
   lastSec = null;
   running = true;
   done = false;
@@ -196,7 +198,7 @@ function start() {
   goBtn.hidden = true;
   resetBtn.hidden = false;
   subEl.textContent = statusLine();
-  sound.beep();
+  if (!resumeFrom) sound.beep();
   haptic.press();
   input.touch();
   input.recalibrate(); // "flat" = how you hold the phone when you press Start
@@ -260,7 +262,13 @@ function reset() {
 goBtn.addEventListener('click', () => {
   if (done) { haptic.press(); reset(); } else if (!running) start();
 });
-resetBtn.addEventListener('click', () => { haptic.press(); reset(); });
+resetBtn.addEventListener('click', () => {
+  haptic.press();
+  // Cancelled in the middle of a game, maybe by mistake: keep the countdown going for 30 s with a way back
+  if (running && endAt - Date.now() > 1500) undo = { endAt, total, until: Date.now() + 30000 };
+  reset();
+  if (undo) showUndo();
+});
 
 // The egg is the start button: a tap on the resting egg starts the clock (a drag is not a tap)
 let tapFrom = null;
@@ -343,15 +351,64 @@ function endSplash() {
   setTimeout(() => sp.remove(), 700);
 }
 
-// The explanation line at the bottom: in once everything has landed, out again after 4 s
-let hintShown = false;
-function showHint() {
-  if (hintShown) return;
-  hintShown = true;
-  const h = $('hint');
-  h.classList.add('show');
-  setTimeout(() => h.classList.remove('show'), 4000 + 700);
+// ---------- The line at the bottom: rotating tips, or a way back after Cancel ----------
+// Tips change calmly every 5.5 s while you set the timer (hidden while the egg boils).
+const TIPS = ['introSub', 'tipEgg', 'tipPlusMinus', 'tipMenu'];
+const hintEl = $('hint');
+let tipIdx = 0;
+let tipsOn = false;
+let tipTimer = null;
+let undo = null;       // { endAt, total, until } after Cancel
+let undoShownSec = null;
+function nextTip(first = false) {
+  clearTimeout(tipTimer);
+  if (!tipsOn || undo) return;
+  hintEl.classList.remove('show');
+  tipTimer = setTimeout(() => {
+    if (undo) return;
+    hintEl.classList.remove('undo');
+    hintEl.textContent = t(TIPS[tipIdx]);
+    tipIdx = (tipIdx + 1) % TIPS.length;
+    hintEl.classList.add('show');
+    tipTimer = setTimeout(nextTip, 5500);
+  }, first ? 0 : 700);
 }
+function showHint() {
+  if (tipsOn) return;
+  tipsOn = true;
+  nextTip(true);
+}
+function showUndo() {
+  clearTimeout(tipTimer);
+  undoShownSec = null;
+  hintEl.classList.add('undo', 'show');
+  hintEl.innerHTML = '<span class="undo-time"></span><span class="undo-text"></span>';
+  hintEl.querySelector('.undo-text').textContent = t('backToTimer');
+  tickUndo();
+}
+// Called every frame: keep the countdown in the button, end the offer after 30 s (or when the time is up)
+function tickUndo() {
+  if (!undo) return;
+  const now = Date.now();
+  const left = (undo.endAt - now) / 1000;
+  if (now > undo.until || left <= 0) { clearUndo(); nextTip(true); return; }
+  const sec = Math.ceil(left);
+  if (sec !== undoShownSec) {
+    undoShownSec = sec;
+    const el = hintEl.querySelector('.undo-time');
+    if (el) el.textContent = fmt(left);
+  }
+}
+function clearUndo() {
+  if (!undo) return;
+  undo = null;
+  hintEl.classList.remove('undo', 'show');
+}
+hintEl.addEventListener('click', () => {
+  if (!undo) return;
+  const u = undo;
+  start({ endAt: u.endAt, total: u.total });
+});
 
 function finishTour() {
   if (tourDone) return;
@@ -369,6 +426,7 @@ function finishTour() {
   setSize(S.size, false, false);
   setDone(S.done, false);
   placeSizer();
+  setTimeout(placeSizer, 700); // again once the altitude block has glided home (its spot limits the egg's lift)
   document.removeEventListener('click', skipTour, true);
   showHint();
 }
@@ -405,7 +463,7 @@ async function runTour() {
   alt.style.transition = '';
 
   // 0) The title alone, in the middle of the screen
-  placeTitle(mid + titleH / 2);
+  placeTitle(mid - innerHeight * 0.04 + rect(title).height / 2); // optical center: a touch above the middle
   endSplash();
   title.classList.add('show');
   await wait(1300);
@@ -661,6 +719,7 @@ world.start((dt, now) => {
   tiltNow.z += (want.z - tiltNow.z) * k;
   world.setTilt(tiltNow.x, tiltNow.z);
 
+  tickUndo();
   // ---- Time ----
   let text;
   let pulse = 0;

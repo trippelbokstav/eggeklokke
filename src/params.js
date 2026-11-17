@@ -7,10 +7,10 @@ export const DEFAULT_PARAMS = {
   eggPointy: 0.11,        // how much fatter the blunt end is
 
   // Placement on the setup screen (pixels, + = down). The egg is lifted (+ = up).
-  eggLift: 40,            // the resting egg sits this far above the screen middle
-  posAlt: 1,              // altitude block (label, mountains, slider)
+  eggLift: 65,            // the resting egg sits this far above the screen middle
+  posAlt: -24,              // altitude block (label, mountains, slider)
   altWidth: 290,          // width of the altitude slider and mountains (pixels)
-  posYolk: -25,             // yolk row (yolk, − +, its name)
+  posYolk: -50,             // yolk row (yolk, − +, its name)
   posStart: -45,            // Start
   // Text (pixels, + = down)
   txtAlt: 35,              // altitude heading (label / number / info line)
@@ -113,7 +113,7 @@ export const DEFAULT_PARAMS = {
   alarmJump: 0.8
 };
 
-const STORE_KEY = 'eggeklokke-lab-v9'; // bump when defaults change, so old lab values don't override them
+const STORE_KEY = 'eggeklokke-lab-v10'; // bump when defaults change, so old lab values don't override them
 
 export function loadParams(useStored) {
   const params = { ...DEFAULT_PARAMS };
