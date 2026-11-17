@@ -397,8 +397,8 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
     const r = focus.getBoundingClientRect();
     const c = container.getBoundingClientRect();
     posePos.x = (((r.left + r.width / 2) - c.left) / w * 2 - 1) * hx;
-    // poseLift: rest a bit above the middle (share of the screen height)
-    posePos.z = (((r.top + r.height / 2 - P.poseLift * h) - c.top) / h * 2 - 1) * hz;
+    // eggLift: rest a bit above the middle (pixels)
+    posePos.z = (((r.top + r.height / 2 - P.eggLift) - c.top) / h * 2 - 1) * hz;
   }
   const ro = new ResizeObserver(resize);
   ro.observe(container);

@@ -6,7 +6,15 @@ export const DEFAULT_PARAMS = {
   eggWidth: 2.18,
   eggPointy: 0.11,        // how much fatter the blunt end is
 
-  poseLift: 0.03,         // the resting egg sits this far above the screen middle (share of the height)
+  // Placement on the setup screen (pixels, + = down). The egg is lifted (+ = up).
+  eggLift: 20,            // the resting egg sits this far above the screen middle
+  posAlt: 0,              // altitude block (label, mountains, slider)
+  posYolk: 0,             // yolk row (yolk, − +, its name)
+  posStart: 0,            // Start
+  // Text (pixels, + = down)
+  txtAlt: 0,              // altitude heading (label / number / info line)
+  txtEgg: 0,              // egg name ("Medium egg"), relative to its spot above the egg
+  txtYolk: 0,             // yolk name ("Smilende"), relative to its spot above the yolk
 
   // Egg size picker (− egg +): the big egg itself grows and shrinks, and you play with that size
   sizeSmall: 0.84,        // scale of a small egg (medium = 1)

@@ -95,7 +95,7 @@
   .seg input:checked + label small { color: var(--yolk-ink); opacity: .8; }
   .seg input:focus-visible + label { outline: 3px solid var(--ink); outline-offset: 2px; }
 
-  .alt-head { position: relative; height: 50px; text-align: center; }
+  .alt-head { position: relative; height: 50px; text-align: center; transform: translateY(var(--txt-alt, 0px)); }
   .alt-head > * { position: absolute; left: 0; right: 0; transition: opacity .25s ease, transform .35s cubic-bezier(.2, 1.2, .4, 1); }
   .alt-label { top: 10px; font-size: .9rem; font-weight: 700; color: var(--muted); }
   .alt-head output { top: 2px; font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
@@ -127,7 +127,7 @@
   input[type=range]:focus-visible::-moz-range-thumb { outline: 3px solid var(--ink); outline-offset: 2px; }
   .note { font-size: .78rem; color: var(--muted); margin: 2px 0 0; line-height: 1.35; }
 
-  .actions { display: grid; gap: 10px; margin-top: 10px; }
+  .actions { display: grid; gap: 10px; margin-top: 10px; transform: translateY(var(--pos-start, 0px)); }
   .panel button, .copybox button {
     font: inherit; font-weight: 800; font-size: 1.05rem; border: 0; border-radius: 16px; min-height: 56px; cursor: pointer;
     padding: 0 22px;
@@ -157,15 +157,15 @@
   .szbtn:disabled, .stepbtn:disabled { opacity: .2; cursor: default; }
   .szbtn:focus-visible, .stepbtn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   /* Yolk picker: − yolk + in the panel */
-  .stepper { display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; gap: 12px; width: var(--row-w); max-width: 100%; margin: 0 auto; }
+  .stepper { display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; gap: 12px; width: var(--row-w); max-width: 100%; margin: 0 auto; transform: translateY(var(--pos-yolk, 0px)); }
   .yolkbox { position: relative; height: 74px; }
   #yolkCanvas { position: absolute; left: 50%; top: 50%; width: 220px; height: 108px; transform: translate(-50%, -50%); pointer-events: none; display: block; }
   .stepbtn { position: relative; z-index: 1; }
-  .altblock { margin: 0 auto; width: var(--row-w); max-width: 100%; }
+  .altblock { margin: 0 auto; width: var(--row-w); max-width: 100%; transform: translateY(var(--pos-alt, 0px)); }
   /* While setting the timer there is no need for the hint under Start */
   body:not(.running):not(.done) .tip { display: none; } /* room for the splash, overlapping a little */
   /* The label sits above the floating yolk, with a halo in the page color so it always reads */
-  .steplabel { position: relative; z-index: 1; text-shadow: 0 0 3px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg); margin: 0 0 2px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+  .steplabel { transform: translateY(calc(var(--pos-yolk, 0px) + var(--txt-yolk, 0px))); position: relative; z-index: 1; text-shadow: 0 0 3px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg); margin: 0 0 2px; text-align: center; display: flex; flex-direction: column; align-items: center; }
   .steplabel strong { font-size: 1rem; font-weight: 800; }
   #sizeDown { left: var(--minus-x, 14%); }
   #sizeUp { left: var(--plus-x, 86%); }

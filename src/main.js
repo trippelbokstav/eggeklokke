@@ -270,8 +270,8 @@ function placeSizer() {
   const r = stage.getBoundingClientRect();
   // Fit: the largest egg must fit between the altitude (top) and the yolk (bottom), with its name above it
   let p = world.poseScreen();
-  const top = document.querySelector('header').getBoundingClientRect().bottom;
-  const bottom = $('panel').getBoundingClientRect().top - 20; // the floating yolk reaches up a bit
+  const top = document.querySelector('.altblock').getBoundingClientRect().bottom;   // includes its offset
+  const bottom = document.querySelector('.steplabel').getBoundingClientRect().top - 20; // the floating yolk reaches up a bit
   const halfL = P.eggLength * P.sizeLarge / 2 * p.ppu;
   const room = Math.min(p.y - top - 52, bottom - p.y - 6); // room above for the name and some air under the slider
   world.setFit(Math.max(0.3, Math.min(1, room / halfL)) || 1);
@@ -285,7 +285,7 @@ function placeSizer() {
   sizer.style.setProperty('--minus-x', (p.x - r.left - gap) + 'px');
   sizer.style.setProperty('--plus-x', (p.x - r.left + gap) + 'px');
   const eggTop = 2 * p.y - p.bottom; // the egg is symmetric around its middle
-  sizer.style.setProperty('--label-y', (eggTop - r.top - 30) + 'px');
+  sizer.style.setProperty('--label-y', (eggTop - r.top - 30 + P.txtEgg) + 'px');
 }
 function stepSize(dir) {
   const i = SIZES.indexOf(sizeKey) + dir;
@@ -298,6 +298,18 @@ sizeUp.addEventListener('click', () => stepSize(1));
 const sizerRO = new ResizeObserver(() => requestAnimationFrame(placeSizer));
 [stage, document.querySelector('header'), $('panel')].forEach((el) => sizerRO.observe(el));
 sizer.hidden = false;
+
+// Placement and text offsets from the lab (Plassering / Tekst), as CSS variables
+function applyLayout() {
+  const root = document.documentElement.style;
+  root.setProperty('--pos-alt', P.posAlt + 'px');
+  root.setProperty('--pos-yolk', P.posYolk + 'px');
+  root.setProperty('--pos-start', P.posStart + 'px');
+  root.setProperty('--txt-alt', P.txtAlt + 'px');
+  root.setProperty('--txt-yolk', P.txtYolk + 'px');
+  placeSizer();
+}
+applyLayout();
 setSize(sizeKey);
 // Debugging in the console: __egg.skip(330) jumps 330 seconds ahead
 window.__egg = { ...world.debug, world, P, game, yolk, skip(s) { if (running) endAt -= s * 1000; } };
@@ -344,6 +356,7 @@ async function toggleLab() {
       askGyro() { input.requestPermission().then(updateTip); },
       calibrate() { input.recalibrate(); haptic.press(); },
       resize() { setSize(sizeKey, true); },
+      layout() { applyLayout(); },
       yolk,
       terrain
     });
