@@ -154,7 +154,7 @@ function statusLine() { return t(doneKey) + ' · ' + t({ s: 'sizeS', m: 'sizeM',
 // Put every fixed text on the page in the chosen language
 function applyLang() {
   const set = (sel, text) => { const el = document.querySelector(sel); if (el) el.textContent = text; };
-  set('#tourTitle p', t('introSub'));
+  set('#hint', t('introSub'));
   set('.alt-label', t('altitude'));
   const es = $('eggStart');
   if (es) es.innerHTML = t('start1') + '<br>' + t('start2');
@@ -343,6 +343,16 @@ function endSplash() {
   setTimeout(() => sp.remove(), 700);
 }
 
+// The explanation line at the bottom: in once everything has landed, out again after 4 s
+let hintShown = false;
+function showHint() {
+  if (hintShown) return;
+  hintShown = true;
+  const h = $('hint');
+  h.classList.add('show');
+  setTimeout(() => h.classList.remove('show'), 4000 + 700);
+}
+
 function finishTour() {
   if (tourDone) return;
   tourDone = true;
@@ -360,6 +370,7 @@ function finishTour() {
   setDone(S.done, false);
   placeSizer();
   document.removeEventListener('click', skipTour, true);
+  showHint();
 }
 function skipTour(e) {
   if (tourDone) return;
@@ -467,6 +478,7 @@ async function runTour() {
   setSize(S.size, false, false);
   setDone(S.done, false);
   placeSizer();
+  showHint();
   // 4) "Start klokka" 3 s after everything has landed
   await wait(3000);
   if (tourDone) return;
