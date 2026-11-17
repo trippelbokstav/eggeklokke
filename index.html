@@ -161,7 +161,7 @@
   .yolkbox { position: relative; height: 74px; }
   #yolkCanvas { position: absolute; left: 50%; top: 50%; width: 220px; height: 108px; transform: translate(-50%, -50%); pointer-events: none; display: block; }
   .stepbtn { position: relative; z-index: 1; }
-  .altblock { margin: 0 auto; width: var(--row-w); max-width: 100%; transform: translateY(var(--pos-alt, 0px)); }
+  .altblock { margin: 0 auto; width: calc(var(--row-w) - 50px); max-width: 100%; transform: translateY(var(--pos-alt, 0px)); }
   /* While setting the timer there is no need for the hint under Start */
   body:not(.running):not(.done) .tip { display: none; } /* room for the splash, overlapping a little */
   /* The label sits above the floating yolk, with a halo in the page color so it always reads */
