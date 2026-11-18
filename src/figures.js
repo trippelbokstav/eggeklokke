@@ -109,7 +109,7 @@ export function spacing(fig) {
   fig.nodes.forEach((a, i) => fig.nodes.forEach((b, j) => {
     if (j <= i) return;
     const d = Math.hypot(a.u - b.u, a.v - b.v);
-    any = Math.min(any, d);
+    if (d > 1e-6) any = Math.min(any, d); // the same spot twice (revisit) is fine
     if (j === i + 1) next = Math.min(next, d);
   }));
   return { next, any };

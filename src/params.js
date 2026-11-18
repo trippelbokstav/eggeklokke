@@ -109,11 +109,12 @@ export const DEFAULT_PARAMS = {
   // Connect the dots: the eggs follow figures from src/figures/, lines are drawn as you take them
   figuresOn: true,        // off = the old random setups
   figLineColor: '#E0680A', // the figure being drawn
-  figLineOpacity: 0.6,
-  figLineWidth: 0.05,     // scene units (the big egg is about 2.2 wide)
+  figLineOpacity: 0.3,
+  figLineWidth: 0.03,     // scene units (the big egg is about 2.2 wide)
   figGrowSec: 0.25,       // how fast a new line draws itself out
   figDoneColor: '#E0680A', // a finished figure flashes up in this color ...
   figDoneOpacity: 1,
+  figDoneWidth: 1.6,      // ... and swells to this times the line width
   figHoldSec: 1.5,        // ... stays clear this long ...
   figFadeSec: 6,          // ... and fades out over this many seconds
 

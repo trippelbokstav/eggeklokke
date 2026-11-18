@@ -11,9 +11,11 @@ for (const file of readdirSync(dir).filter((f) => f.endsWith('.svg')).sort()) {
   if (!fig) { console.log(`✗ ${file}: no points found`); bad++; continue; }
   const s = spacing(fig);
   const strokes = fig.nodes.filter((n) => !n.line).length;
+  const lifts = strokes - 1; // pen lifts = holes in the figure (fine, but use them rarely)
   const lines = fig.nodes.filter((n) => n.line).length + fig.closes.length;
   const warn = s.any < MIN ? `  ⚠ two points only ${s.any.toFixed(3)} apart (min ${MIN})` : '';
   if (warn) bad++;
-  console.log(`${warn ? '✗' : '✓'} ${fig.name}: ${fig.nodes.length} points, ${lines} lines, ${strokes} stroke(s), ${fig.closes.length} closed, ${fig.w.toFixed(2)}×${fig.h.toFixed(2)}${warn}`);
+  const hole = lifts ? `  ✎ ${lifts} pen lift(s) = hole(s)` : '  connected';
+  console.log(`${warn ? '✗' : '✓'} ${fig.name}: ${fig.nodes.length} points, ${lines} lines, ${fig.closes.length} closed, ${fig.w.toFixed(2)}×${fig.h.toFixed(2)}${hole}${warn}`);
 }
 process.exit(bad ? 1 : 0);

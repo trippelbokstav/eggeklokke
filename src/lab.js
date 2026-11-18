@@ -128,6 +128,7 @@ export function createLab(P, world, diag) {
   fig.add(P, 'figGrowSec', 0, 1, 0.05).name('strek tegnes (s)').onChange(repaint);
   fig.addColor(P, 'figDoneColor').name('ferdig figur').onChange(repaint);
   fig.add(P, 'figDoneOpacity', 0.05, 1, 0.01).name('ferdig synlighet').onChange(repaint);
+  fig.add(P, 'figDoneWidth', 1, 4, 0.1).name('ferdig tykkelse').onChange(repaint);
   fig.add(P, 'figHoldSec', 0, 10, 0.5).name('ferdig vises (s)').onChange(repaint);
   fig.add(P, 'figFadeSec', 0.5, 20, 0.5).name('ferdig fader (s)').onChange(repaint);
   fig.add({ reset() { try { localStorage.removeItem('trillekok-figure-v1'); } catch (e) { /* ignore */ } } }, 'reset').name('Glem figur i gang');

@@ -154,17 +154,17 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
     });
     const g = new THREE.Group();
     g.renderOrder = -3;
-    g.userData = { mat, segs: [], mode: 'on', t: 0, from: opacity, base: opacity };
+    g.userData = { mat, segs: [], mode: 'on', t: 0, from: opacity, wk: 1 }; // wk: width factor
     scene.add(g);
     return g;
   }
   function disposeGroup(g) { scene.remove(g); g.userData.mat.dispose(); }
   let figNow = null;     // the figure being drawn
   const figOld = [];     // finished (or abandoned) figures fading out
-  function placeSeg(s, k) {
+  function placeSeg(s, k, wk = 1) {
     const dx = s.bx - s.ax, dz = s.bz - s.az;
     const len = Math.hypot(dx, dz) * k;
-    const w = P.figLineWidth;
+    const w = P.figLineWidth * wk;
     s.strip.scale.set(Math.max(1e-4, len), 1, w);
     s.strip.rotation.y = -Math.atan2(dz, dx);
     s.strip.position.set(s.ax, s.y, s.az);
@@ -184,7 +184,7 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
         if (s.delay > 0) { busy = true; s.strip.visible = s.capA.visible = s.capB.visible = false; continue; }
         s.strip.visible = s.capA.visible = s.capB.visible = true;
         s.k = Math.min(1, s.k + dt / Math.max(0.01, P.figGrowSec));
-        placeSeg(s, 1 - (1 - s.k) ** 3); // ease out
+        placeSeg(s, 1 - (1 - s.k) ** 3, u.wk); // ease out
         busy = true;
       }
       u.t += dt;
@@ -195,6 +195,9 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
           : u.t < up + hold ? P.figDoneOpacity
           : P.figDoneOpacity * Math.max(0, 1 - (u.t - up - hold) / Math.max(0.01, P.figFadeSec));
         u.mat.opacity = o;
+        // The lines swell up with the flash (ease out), and stay that thick while fading
+        const wk = 1 + (P.figDoneWidth - 1) * (1 - (1 - Math.min(1, u.t / (up * 2))) ** 3);
+        if (wk !== u.wk) { u.wk = wk; for (const s of u.segs) placeSeg(s, 1 - (1 - s.k) ** 3, wk); }
         busy = true;
         if (u.t > up + hold + P.figFadeSec) u.mode = 'gone';
       } else if (u.mode === 'out') {
