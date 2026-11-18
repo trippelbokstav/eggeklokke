@@ -3,8 +3,8 @@
 // Each small egg has its own countdown (comboSec): it goes yellow -> orange -> red, with ticks.
 // Take it while it still has color and the streak (rekke) grows: each egg is worth the streak number.
 // Too late (light blue): it still counts +1, but the streak starts over.
-// Connect the dots: the eggs follow a figure from src/figures/. Each egg taken in time draws a line
-// from the one before, too late = no line (the figure stays incomplete). A finished figure flashes up
+// Connect the dots: the eggs follow a figure from src/figures/. Each egg taken draws a line from the
+// one before, also when it came too late (time only counts for the streak). A finished figure flashes up
 // and fades out while the next one starts. The figure in progress is saved, so the next boil goes on
 // where this one stopped.
 
@@ -151,16 +151,16 @@ export function createGame(world, P, hooks) {
     }
   }
 
-  // A node of the figure was taken: draw its line (only in time), and finish the figure at the end
-  function connect(node, inTime) {
+  // A node of the figure was taken: draw its line, and finish the figure at the end
+  function connect(node) {
     const fig = node.fig;
     if (!prog || prog.name !== fig.name) prog = { name: fig.name, next: 0, drawn: [], closes: [], prev: prog ? prog.name : null };
-    if (inTime && fig.nodes[node.i].line) {
+    if (fig.nodes[node.i].line) {
       world.game.figLine(nodePos(fig, node.i - 1), nodePos(fig, node.i));
       prog.drawn.push(node.i);
     }
     for (const c of fig.closes) {
-      if (c.from !== node.i || !inTime) continue;
+      if (c.from !== node.i) continue;
       world.game.figLine(nodePos(fig, c.from), nodePos(fig, c.to));
       prog.closes.push(c.from);
     }
@@ -190,7 +190,7 @@ export function createGame(world, P, hooks) {
     lastPick = now;
     hooks.onPickup({ n: target.n, combo, eggs, bonus, x: target.x, z: target.z });
     world.game.popTarget();
-    if (target.fig) connect(target, inTime);
+    if (target.fig) connect(target);
     // The first dot becomes the next egg, and the plan moves on
     const next = plan.shift();
     next.n = target.n + 1;
