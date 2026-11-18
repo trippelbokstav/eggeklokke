@@ -3,6 +3,16 @@
 // Each small egg has its own countdown (comboSec): it goes yellow -> orange -> red, with ticks.
 // Take it while it still has color and the streak (rekke) grows: each egg is worth the streak number.
 // Too late (light blue): it still counts +1, but the streak starts over.
+// Connect the dots: the eggs follow a figure from src/figures/. Each egg taken in time draws a line
+// from the one before, too late = no line (the figure stays incomplete). A finished figure flashes up
+// and fades out while the next one starts. The figure in progress is saved, so the next boil goes on
+// where this one stopped.
+
+import { loadFigures } from './figures.js';
+
+const FIG_KEY = 'trillekok-figure-v1';
+const loadProgress = () => { try { return JSON.parse(localStorage.getItem(FIG_KEY) || 'null'); } catch (e) { return null; } };
+const saveProgress = (p) => { try { localStorage.setItem(FIG_KEY, JSON.stringify(p)); } catch (e) { /* ignore */ } };
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const hex = (h) => { const n = parseInt(h.replace('#', ''), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
@@ -22,6 +32,13 @@ export function createGame(world, P, hooks) {
   let plan = [];       // upcoming spots; the dots show the first two
   let nextTick = 0;
   let lastTint = 0;
+  // Connect the dots
+  const figures = loadFigures();
+  const useFigures = () => P.figuresOn && figures.length > 0;
+  let prog = null;       // the figure being drawn: { name, next, drawn: [node], closes: [node], prev }
+  let queueFig = null;   // the figure whose nodes are being put in the plan, and the next node to put
+  let queueIdx = 0;
+  const placed = new Map(); // figure name -> node index -> floor point, for this round
 
   // Countdown 0..1 for the current egg (>= 1 = too late for the streak)
   const progress = (now) => (now - target.at) / (P.comboSec * 1000);
@@ -91,8 +108,71 @@ export function createGame(world, P, hooks) {
     return pts.map((p) => clampTo(p, A));
   }
 
+  // Fit a figure into the play area (aspect kept, centered) -> floor point of node i
+  function nodePos(fig, i) {
+    let m = placed.get(fig.name);
+    if (!m) {
+      const A = area();
+      const W = A.x1 - A.x0, H = A.z1 - A.z0;
+      const k = Math.min(W / Math.max(fig.w, 1e-3), H / Math.max(fig.h, 1e-3));
+      const ox = A.x0 + (W - fig.w * k) / 2, oz = A.z0 + (H - fig.h * k) / 2;
+      m = fig.nodes.map((n) => ({ x: ox + n.u * k, z: oz + n.v * k }));
+      placed.set(fig.name, m);
+    }
+    return m[i];
+  }
+  const figByName = (name) => figures.find((f) => f.name === name);
+  // A new figure at random, not the same as the last one
+  function nextFigure(prev) {
+    const pool = figures.length > 1 ? figures.filter((f) => f.name !== prev) : figures;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
   function refill(from) {
-    while (plan.length < 3) plan.push(...pattern(plan.length ? plan[plan.length - 1] : from));
+    while (plan.length < 3) {
+      if (!useFigures()) { plan.push(...pattern(plan.length ? plan[plan.length - 1] : from)); continue; }
+      if (queueIdx >= queueFig.nodes.length) { queueFig = nextFigure(queueFig.name); queueIdx = 0; }
+      plan.push({ ...nodePos(queueFig, queueIdx), fig: queueFig, i: queueIdx });
+      queueIdx++;
+    }
+  }
+
+  // Draw the lines already made in the figure in progress (quickly one after another, or at once)
+  function redraw(stagger) {
+    world.game.figHide();
+    const fig = prog && figByName(prog.name);
+    if (!fig) return;
+    let k = 0;
+    const opts = () => (stagger ? { grow: true, delay: (k++) * stagger } : { grow: false });
+    for (const i of prog.drawn) if (i > 0) world.game.figLine(nodePos(fig, i - 1), nodePos(fig, i), opts());
+    for (const i of prog.closes) {
+      const c = fig.closes.find((cl) => cl.from === i);
+      if (c) world.game.figLine(nodePos(fig, c.from), nodePos(fig, c.to), opts());
+    }
+  }
+
+  // A node of the figure was taken: draw its line (only in time), and finish the figure at the end
+  function connect(node, inTime) {
+    const fig = node.fig;
+    if (!prog || prog.name !== fig.name) prog = { name: fig.name, next: 0, drawn: [], closes: [], prev: prog ? prog.name : null };
+    if (inTime && fig.nodes[node.i].line) {
+      world.game.figLine(nodePos(fig, node.i - 1), nodePos(fig, node.i));
+      prog.drawn.push(node.i);
+    }
+    for (const c of fig.closes) {
+      if (c.from !== node.i || !inTime) continue;
+      world.game.figLine(nodePos(fig, c.from), nodePos(fig, c.to));
+      prog.closes.push(c.from);
+    }
+    prog.next = node.i + 1;
+    if (prog.next >= fig.nodes.length) {
+      world.game.figDone();
+      if (hooks.onFigure) hooks.onFigure({ name: fig.name, complete: prog.drawn.length + prog.closes.length });
+      // The next figure in the plan (already chosen) becomes the one in progress
+      const nextFig = plan[0] && plan[0].fig;
+      prog = nextFig ? { name: nextFig.name, next: 0, drawn: [], closes: [], prev: fig.name } : null;
+    }
+    saveProgress(prog);
   }
 
   function show(now) {
@@ -104,11 +184,13 @@ export function createGame(world, P, hooks) {
 
   function pick(now) {
     eggs++;
-    combo = progress(now) < 1 ? combo + 1 : 1; // in time keeps the streak, too late starts over
+    const inTime = progress(now) < 1;
+    combo = inTime ? combo + 1 : 1; // in time keeps the streak, too late starts over
     bonus += combo - 1;
     lastPick = now;
     hooks.onPickup({ n: target.n, combo, eggs, bonus, x: target.x, z: target.z });
     world.game.popTarget();
+    if (target.fig) connect(target, inTime);
     // The first dot becomes the next egg, and the plan moves on
     const next = plan.shift();
     next.n = target.n + 1;
@@ -128,6 +210,13 @@ export function createGame(world, P, hooks) {
       penalties = 0;
       lastPenalty = -1e9;
       plan = [];
+      placed.clear();
+      // Go on with the figure from last time, or start a new one
+      prog = useFigures() ? loadProgress() : null;
+      const saved = prog && figByName(prog.name);
+      if (saved && prog.next < saved.nodes.length) { queueFig = saved; queueIdx = prog.next; }
+      else if (useFigures()) { queueFig = nextFigure(prog && prog.prev); queueIdx = 0; prog = null; }
+      if (useFigures()) redraw(0.06);
       refill(world.eggPos());
       target = { ...plan.shift(), n: 1 };
       refill(target);
@@ -137,6 +226,7 @@ export function createGame(world, P, hooks) {
       active = false;
       paused = false;
       world.game.clear();
+      world.game.figHide();
     },
     // Cancel with a way back: hide the eggs but keep the score, streak and plan
     pause() {
@@ -144,12 +234,14 @@ export function createGame(world, P, hooks) {
       active = false;
       paused = true;
       world.game.clear();
+      world.game.figHide();
     },
     // Back to the countdown: the same egg and dots come back, the score is as before
     resume(now) {
       if (!paused || !target) return false;
       paused = false;
       active = true;
+      if (useFigures()) redraw(0);
       show(now);
       return true;
     },
@@ -175,6 +267,8 @@ export function createGame(world, P, hooks) {
       return P.bumpPenalty;
     },
     get active() { return active; },
+    // For debugging/tests: the egg to take now, and the figure in progress
+    get debug() { return { target, prog, plan }; },
     // For the score line
     stats(now) {
       const streak = target && progress(now) < 1 ? combo : 0;

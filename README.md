@@ -17,6 +17,7 @@ The first, simple SVG version is kept on the branch `v1-svg`.
 - **The clock** is painted on a canvas texture in low contrast, repeated around the egg.
 - **Color:** the egg keeps the background color. The outline steps every 30 s from white via yellow to red, and swells on the beeps in the last 10 s.
 - **The game** (`src/game.js`): while the egg boils, roll over small yellow eggs in order (1, 2, 3 …), the number lying flat on top. Two dots show where the next two appear (yellow = next, light blue = after). Spots come in little setups: a column to roll down or up, a row across, a diagonal, or a far jump. You must roll well over an egg (`pickup`), the edge is not enough. Each small egg counts down (`comboSec`): yellow → orange → red with ticks. Take it in time and the streak (rekke) grows: each egg is worth the streak number. Too late (light blue): +1, and the streak starts over. At the alarm the game ends, the egg glides home and the score shows.
+- **Connect the dots** (`src/figures.js`): the small eggs follow a figure from `src/figures/`. Each egg taken in time draws a line from the one before (too late = no line, the figure stays incomplete). A finished figure flashes up clear and fades out slowly while the next one starts. The figure in progress is saved (`localStorage`), so the next boil goes on where this one stopped. Turn off with `figuresOn` in the lab (back to the random setups).
 - **Haptics** (`@capacitor/haptics`): clicks on buttons, ticks at the end, bumps when the egg hits the dish. Only in the iOS app.
 
 | File | What |
@@ -24,6 +25,8 @@ The first, simple SVG version is kept on the branch `v1-svg`.
 | `src/params.js` | all tunable values (defaults) |
 | `src/lab.js` | the lab: sliders for everything (`?lab`) |
 | `src/game.js` | the egg-collecting game |
+| `src/figures.js` | connect-the-dots figures: SVG parsing |
+| `src/figures/` | the figures (one SVG each) |
 | `src/main.js` | UI, timer, colors, idle logic |
 | `src/world.js` | three.js scene + Rapier physics |
 | `src/eggTexture.js` | painting the shell |
@@ -42,6 +45,15 @@ paste it to Claude, and it becomes the new default in `src/params.js`.
 Add `?fps` for an FPS meter (`?lab&fps` for both).
 
 Debug in the console: `__egg.skip(300)` jumps 300 seconds ahead while the timer runs.
+
+## Figures from Illustrator
+
+- One figure per file, saved as **SVG** in `src/figures/`, e.g. `kylling.svg` (lowercase, no spaces or æøå).
+- Draw with the **Pen tool, straight lines only**. Every anchor point becomes a small egg. Curves are ignored.
+- **The path direction is the order**: the first anchor is egg 1. A closed path also gets the line back to the start.
+- **Several paths** = lift the pen between them (taken in layer/document order).
+- No transforms on groups (Object → Transform → Reset, or just draw on the artboard). Any artboard size: the figure is scaled to fit the screen.
+- Check before playing: `npm run check-figures` lists points and lines, and warns if two points sit too close.
 
 ## Commands
 

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Placeholder: a five-pointed star, one closed path (absolute commands) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1600">
+  <path d="M450,420L540,690L820,690L590,860L680,1130L450,965L220,1130L310,860L80,690L360,690Z" fill="none" stroke="#000" stroke-width="4"/>
+</svg>

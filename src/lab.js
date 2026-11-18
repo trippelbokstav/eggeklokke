@@ -120,6 +120,18 @@ export function createLab(P, world, diag) {
   game.add(P, 'dotNextSize', 0.005, 0.2, 0.005).name('prikk neste (gul)').onChange(repaint);
   game.add(P, 'dotLaterSize', 0.005, 0.2, 0.005).name('prikk etter (blå)').onChange(repaint);
 
+  const fig = gui.addFolder('Figurer (tegn etter tall)');
+  fig.add(P, 'figuresOn').name('figurer på').onChange(repaint);
+  fig.addColor(P, 'figLineColor').name('strek').onChange(repaint);
+  fig.add(P, 'figLineOpacity', 0.05, 1, 0.01).name('strek synlighet').onChange(repaint);
+  fig.add(P, 'figLineWidth', 0.01, 0.2, 0.005).name('strek tykkelse').onChange(repaint);
+  fig.add(P, 'figGrowSec', 0, 1, 0.05).name('strek tegnes (s)').onChange(repaint);
+  fig.addColor(P, 'figDoneColor').name('ferdig figur').onChange(repaint);
+  fig.add(P, 'figDoneOpacity', 0.05, 1, 0.01).name('ferdig synlighet').onChange(repaint);
+  fig.add(P, 'figHoldSec', 0, 10, 0.5).name('ferdig vises (s)').onChange(repaint);
+  fig.add(P, 'figFadeSec', 0.5, 20, 0.5).name('ferdig fader (s)').onChange(repaint);
+  fig.add({ reset() { try { localStorage.removeItem('trillekok-figure-v1'); } catch (e) { /* ignore */ } } }, 'reset').name('Glem figur i gang');
+
   const beh = gui.addFolder('Oppførsel');
   beh.add(P, 'idleSec', 2, 60, 1).name('hjem etter (s)').onChange(changed);
   beh.add(P, 'homeSpeed', 0.5, 10, 0.1).name('hjem-fart').onChange(changed);

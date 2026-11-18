@@ -307,7 +307,9 @@ game = createGame(world, P, {
     haptic.pickup();
     sound.pickup(e.combo);
     floatLabel(e);
-  }
+  },
+  // A connect-the-dots figure is finished (it flashes up in world.js)
+  onFigure() { haptic.press(); }
 });
 
 // A "+1" (or "+1 ×3" in a streak) that floats up from the small egg

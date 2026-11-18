@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Placeholder: a fish, one closed path with relative commands and a curve (only its end point counts) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1600">
+  <path d="m120,800 l160,-170 h200 c60,0 100,40 140,90 l140,-140 v240 v180 l-140,-140 c-40,50 -80,90 -140,90 h-200 z" fill="none" stroke="#000" stroke-width="4"/>
+</svg>

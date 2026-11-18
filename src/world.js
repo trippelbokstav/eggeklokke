@@ -37,7 +37,7 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
   await RAPIER.init();
 
   // ---------- three.js ----------
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, stencil: true }); // stencil: figure lines
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, P.pixelRatio));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   container.appendChild(renderer.domElement);
@@ -138,6 +138,74 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
     return m;
   });
   const floorHalf = { x: 3, z: 5 }; // visible half size on the floor, set in resize()
+
+  // ---------- Figure lines (connect the dots) ----------
+  // Flat strips on the floor, under the eggs. Each group draws with the stencil, so where its
+  // strips and round joints overlap the color is laid down once (no darker spots at the joints).
+  const stripGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0.5, 0, 0); // length along +x from 0
+  const capGeo = new THREE.CircleGeometry(0.5, 20).rotateX(-Math.PI / 2);
+  let stencilRef = 0;
+  function lineGroup(color, opacity) {
+    stencilRef = (stencilRef % 250) + 1;
+    const mat = new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity, depthWrite: false,
+      stencilWrite: true, stencilRef, stencilFunc: THREE.NotEqualStencilFunc,
+      stencilZPass: THREE.ReplaceStencilOp
+    });
+    const g = new THREE.Group();
+    g.renderOrder = -3;
+    g.userData = { mat, segs: [], mode: 'on', t: 0, from: opacity, base: opacity };
+    scene.add(g);
+    return g;
+  }
+  function disposeGroup(g) { scene.remove(g); g.userData.mat.dispose(); }
+  let figNow = null;     // the figure being drawn
+  const figOld = [];     // finished (or abandoned) figures fading out
+  function placeSeg(s, k) {
+    const dx = s.bx - s.ax, dz = s.bz - s.az;
+    const len = Math.hypot(dx, dz) * k;
+    const w = P.figLineWidth;
+    s.strip.scale.set(Math.max(1e-4, len), 1, w);
+    s.strip.rotation.y = -Math.atan2(dz, dx);
+    s.strip.position.set(s.ax, s.y, s.az);
+    s.capA.scale.set(w, 1, w);
+    s.capA.position.set(s.ax, s.y, s.az);
+    s.capB.scale.set(w, 1, w);
+    s.capB.position.set(s.ax + (s.bx - s.ax) * k, s.y, s.az + (s.bz - s.az) * k);
+  }
+  function animateLines(dt) {
+    let busy = false;
+    const groups = figNow ? [figNow, ...figOld] : figOld;
+    for (const g of groups) {
+      const u = g.userData;
+      for (const s of u.segs) {
+        if (s.k >= 1) continue;
+        s.delay -= dt;
+        if (s.delay > 0) { busy = true; s.strip.visible = s.capA.visible = s.capB.visible = false; continue; }
+        s.strip.visible = s.capA.visible = s.capB.visible = true;
+        s.k = Math.min(1, s.k + dt / Math.max(0.01, P.figGrowSec));
+        placeSeg(s, 1 - (1 - s.k) ** 3); // ease out
+        busy = true;
+      }
+      u.t += dt;
+      if (u.mode === 'done') {
+        // Flash up clear, hold, then fade away slowly
+        const up = 0.15, hold = P.figHoldSec;
+        const o = u.t < up ? u.from + (P.figDoneOpacity - u.from) * (u.t / up)
+          : u.t < up + hold ? P.figDoneOpacity
+          : P.figDoneOpacity * Math.max(0, 1 - (u.t - up - hold) / Math.max(0.01, P.figFadeSec));
+        u.mat.opacity = o;
+        busy = true;
+        if (u.t > up + hold + P.figFadeSec) u.mode = 'gone';
+      } else if (u.mode === 'out') {
+        u.mat.opacity = u.from * Math.max(0, 1 - u.t / 0.5);
+        busy = true;
+        if (u.t > 0.5) u.mode = 'gone';
+      }
+    }
+    for (let i = figOld.length - 1; i >= 0; i--) if (figOld[i].userData.mode === 'gone') { disposeGroup(figOld[i]); figOld.splice(i, 1); }
+    return busy;
+  }
   const backOut = (t) => { const c1 = 1.70158; const c3 = c1 + 1; return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2; };
 
   // ---------- Rapier ----------
@@ -369,6 +437,7 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
       const sz = size * backOut(Math.min(1, d.userData.t / 0.3));
       if (d.scale.x !== sz) { d.scale.setScalar(sz); busy = true; }
     });
+    if (animateLines(dt)) busy = true;
     return busy;
   }
 
@@ -597,6 +666,39 @@ export async function createWorld(container, P, focus = container, bottomEl = nu
       clear() {
         minis.forEach((m) => { if (m.userData.mode !== 'off') Object.assign(m.userData, { mode: 'pop', t: 0 }); });
         dots.forEach((d) => { d.visible = false; d.userData.x = NaN; });
+        dirty = true;
+      },
+      // A line of the figure from a to b (floor points). grow: animate it; delay: seconds before it starts
+      figLine(a, b, { grow = true, delay = 0 } = {}) {
+        if (!figNow) figNow = lineGroup(P.figLineColor, P.figLineOpacity);
+        const u = figNow.userData;
+        const s = { ax: a.x, az: a.z, bx: b.x, bz: b.z, y: 0.001, k: grow ? 0 : 1, delay };
+        s.strip = new THREE.Mesh(stripGeo, u.mat);
+        s.capA = new THREE.Mesh(capGeo, u.mat);
+        s.capB = new THREE.Mesh(capGeo, u.mat);
+        for (const m of [s.strip, s.capA, s.capB]) { m.renderOrder = -3; figNow.add(m); }
+        placeSeg(s, grow ? 0 : 1);
+        if (grow || delay > 0) s.strip.visible = s.capA.visible = s.capB.visible = delay <= 0;
+        u.segs.push(s);
+        dirty = true;
+      },
+      // The figure is finished: it flashes up clear and fades out slowly, while the next one starts
+      figDone() {
+        if (!figNow) return;
+        const u = figNow.userData;
+        u.mode = 'done'; u.t = 0; u.from = u.mat.opacity;
+        u.mat.color.set(P.figDoneColor);
+        figOld.push(figNow);
+        figNow = null;
+        dirty = true;
+      },
+      // Hide the figure being drawn (quick fade), e.g. when the game stops
+      figHide() {
+        if (!figNow) return;
+        const u = figNow.userData;
+        u.mode = 'out'; u.t = 0; u.from = u.mat.opacity;
+        figOld.push(figNow);
+        figNow = null;
         dirty = true;
       },
       // The free area (between the title and the panel) in floor coordinates
