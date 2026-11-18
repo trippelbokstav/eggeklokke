@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="theme-color" content="#FFE49A">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Trillekok</title>
 <style>
   /* Fonts ship with the app (works offline). Sniglet and Comfortaa: SIL Open Font License, see public/fonts/OFL.txt */
@@ -42,7 +42,7 @@
       --line: #5A4413; --yolk: #FF9A2E; --yolk-ink: #2A1D00; --track: #46340F; --alert: #FF7A45;
     }
   }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; touch-action: manipulation; } /* no double-tap zoom on iOS (taps stay fast) */
   :root { padding-top: 0; padding-bottom: 0; --row-w: 340px; } /* one column: − + rows and the altitude line up */ /* the app pads for the notch itself (.app) */
   html, body { height: 100%; }
   body {

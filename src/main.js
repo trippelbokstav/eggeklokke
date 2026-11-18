@@ -27,6 +27,10 @@ const scoreEl = $('score');
 // All tunable values live in params.js. The ⚙︎ button (or ?lab) opens the lab to edit them live.
 // Values tuned in the lab are saved in this browser and used every time.
 const isLab = new URLSearchParams(location.search).has('lab');
+
+// An app, not a web page: no pinch zoom or double-tap zoom on iOS
+['gesturestart', 'gesturechange'].forEach((ev) => document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 const P = loadParams(true);
 
 // Settings saved on this phone: look, language, my own times + home altitude, last size and yolk
